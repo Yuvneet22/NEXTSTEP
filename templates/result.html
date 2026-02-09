@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Your Result{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+    <div class="bg-white shadow-xl rounded-2xl overflow-hidden border border-gray-200">
+
+        <!-- Header / Main Metric -->
+        <div class="bg-indigo-600 px-4 py-8 sm:px-6 text-center text-white">
+            <h2 class="text-sm uppercase tracking-wide font-semibold opacity-80">Phase 2 Category</h2>
+            <h1 class="mt-2 text-5xl font-extrabold tracking-tight">{{ result.phase_2_category }}</h1>
+            <div class="mt-4 flex justify-center space-x-6 text-indigo-100">
+                <span class="flex items-center">
+                    <svg class="h-5 w-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                    {{ result.personality }}
+                </span>
+                <span class="flex items-center">
+                    <svg class="h-5 w-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                    {{ result.goal_status }}
+                </span>
+            </div>
+        </div>
+
+        <!-- Detailed Breakdown -->
+        <div class="px-6 py-8 sm:p-10">
+            <div class="prose prose-indigo max-w-none text-gray-500">
+                <h3 class="text-gray-900 text-xl font-bold mb-4">Why this fits you</h3>
+                <p>{{ result.reasoning }}</p>
+
+                <div class="mt-8 bg-gray-50 rounded-lg p-6 border border-gray-100">
+                    <h4 class="text-sm font-semibold text-gray-900 uppercase tracking-widest">AI Confidence Score</h4>
+                    <div class="mt-2 flex items-center">
+                        <div class="flex-1 bg-gray-200 rounded-full h-2">
+                            <div class="bg-indigo-600 h-2 rounded-full" style="width: {{ result.confidence * 100 }}%">
+                            </div>
+                        </div>
+                        <span class="ml-4 text-lg font-bold text-indigo-600">{{ (result.confidence * 100) | round|int
+                            }}%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-10 border-t border-gray-200 pt-10">
+                <h3 class="text-lg font-medium text-gray-900">Recommended Next Steps</h3>
+                <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div
+                        class="relative rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm flex items-center space-x-3 hover:border-gray-400 focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
+                        <div class="flex-shrink-0">
+                            <span
+                                class="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">1</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <a href="#" class="focus:outline-none">
+                                <span class="absolute inset-0" aria-hidden="true"></span>
+                                <p class="text-sm font-medium text-gray-900">Build your Roadmap</p>
+                                <p class="text-sm text-gray-500 truncate">Create a step-by-step plan.</p>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div
+                        class="relative rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm flex items-center space-x-3 hover:border-gray-400 focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
+                        <div class="flex-shrink-0">
+                            <span
+                                class="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold">2</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <a href="#" class="focus:outline-none">
+                                <span class="absolute inset-0" aria-hidden="true"></span>
+                                <p class="text-sm font-medium text-gray-900">Explore Careers</p>
+                                <p class="text-sm text-gray-500 truncate">See roles that match {{
+                                    result.phase_2_category }}.</p>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-8 text-center">
+                <a href="/assessment" class="text-indigo-600 hover:text-indigo-500 font-medium">Retake Assessment</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

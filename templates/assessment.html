@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block title %}Assessment{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Career Personality Assessment</h3>
+            <p class="mt-1 max-w-2xl text-sm text-gray-500">Answer these 10 questions to discover your ideal career
+                path.</p>
+        </div>
+        <div class="border-t border-gray-200 px-4 py-5 sm:p-6">
+            <form action="/assessment/submit" method="POST" class="space-y-8">
+
+                <!-- Q1 -->
+                <div>
+                    <h4 class="text-md font-bold text-gray-800 mb-2">1. Social Battery</h4>
+                    <div class="space-y-2">
+                        <label
+                            class="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                            <input type="radio" name="Q1_SocialBattery" value="A" required
+                                class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300">
+                            <span class="text-gray-700">A quiet morning with a book/coffee.</span>
+                        </label>
+                        <label
+                            class="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                            <input type="radio" name="Q1_SocialBattery" value="B" required
+                                class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300">
+                            <span class="text-gray-700">A high-energy concert with a crowd.</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Q2 -->
+                <div>
+                    <h4 class="text-md font-bold text-gray-800 mb-2">2. Communication</h4>
+                    <div class="space-y-2">
+                        <label
+                            class="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                            <input type="radio" name="Q2_Communication" value="A" required
+                                class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300">
+                            <span class="text-gray-700">Sending a carefully crafted email.</span>
+                        </label>
+                        <label
+                            class="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                            <input type="radio" name="Q2_Communication" value="B" required
+                                class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300">
+                            <span class="text-gray-700">Hopping on a quick, "face-to-face" video call.</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Q3 -->
+                <div>
+                    <h4 class="text-md font-bold text-gray-800 mb-2">3. Workspace</h4>
+                    <div class="space-y-2">
+                        <label
+                            class="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                            <input type="radio" name="Q3_Workspace" value="A" required
+                                class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300">
+                            <span class="text-gray-700">A private pod with noise-canceling headphones.</span>
+                        </label>
+                        <label
+                            class="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                            <input type="radio" name="Q3_Workspace" value="B" required
+                                class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300">
+                            <span class="text-gray-700">A bustling co-working space with open desks.</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Q4 -->
+                <div>
+                    <h4 class="text-md font-bold text-gray-800 mb-2">4. Problem Solving</h4>
+                    <div class="space-y-2">
+                        <label
+                            class="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                            <input type="radio" name="Q4_ProblemSolving" value="A" required
+                                class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300">
+                            <span class="text-gray-700">Digging through Google/Manuals solo.</span>
+                        </label>
+                        <label
+                            class="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                            <input type="radio" name="Q4_ProblemSolving" value="B" required
+                                class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300">
+                            <span class="text-gray-700">Bouncing ideas off a group on a whiteboard.</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Q5 -->
+                <div>
+                    <h4 class="text-md font-bold text-gray-800 mb-2">5. Meeting Role</h4>
+                    <div class="space-y-2">
+                        <label
+                            class="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                            <input type="radio" name="Q5_MeetingRole" value="A" required
+                                class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300">
+                            <span class="text-gray-700">The person taking detailed, silent notes.</span>
+                        </label>
+                        <label
+                            class="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                            <input type="radio" name="Q5_MeetingRole" value="B" required
+                                class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300">
+                            <span class="text-gray-700">The person leading the brainstorm out loud.</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Q6 -->
+                <div>
+                    <h4 class="text-md font-bold text-gray-800 mb-2">6. Learning Style</h4>
+                    <div class="space-y-2">
+                        <label
+                            class="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                            <input type="radio" name="Q6_LearningStyle" value="A" required
+                                class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300">
+                            <span class="text-gray-700">Watching a deep-dive documentary alone.</span>
+                        </label>
+                        <label
+                            class="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                            <input type="radio" name="Q6_LearningStyle" value="B" required
+                                class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300">
+                            <span class="text-gray-700">Attending a live, interactive workshop.</span>
+                        </label>
+                    </div>
+                </div>
+
+                <hr class="border-gray-200">
+
+                <!-- Q7 -->
+                <div>
+                    <h4 class="text-md font-bold text-gray-800 mb-2">7. Goal: Path</h4>
+                    <div class="space-y-2">
+                        <label
+                            class="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                            <input type="radio" name="Q7_GoalPath" value="A" required
+                                class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300">
+                            <span class="text-gray-700">A straight highway with a clear destination.</span>
+                        </label>
+                        <label
+                            class="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                            <input type="radio" name="Q7_GoalPath" value="B" required
+                                class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300">
+                            <span class="text-gray-700">A winding trail through a beautiful forest.</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Q8 -->
+                <div>
+                    <h4 class="text-md font-bold text-gray-800 mb-2">8. Goal: Vision</h4>
+                    <div class="space-y-2">
+                        <label
+                            class="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                            <input type="radio" name="Q8_GoalVision" value="A" required
+                                class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300">
+                            <span class="text-gray-700">I have a "Dream Job" title in my head.</span>
+                        </label>
+                        <label
+                            class="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                            <input type="radio" name="Q8_GoalVision" value="B" required
+                                class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300">
+                            <span class="text-gray-700">I have a "Lifestyle" I want, but the job is tbd.</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Q9 -->
+                <div>
+                    <h4 class="text-md font-bold text-gray-800 mb-2">9. Goal: Speed</h4>
+                    <div class="space-y-2">
+                        <label
+                            class="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                            <input type="radio" name="Q9_GoalSpeed" value="A" required
+                                class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300">
+                            <span class="text-gray-700">I want to specialize and be the best at one thing.</span>
+                        </label>
+                        <label
+                            class="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                            <input type="radio" name="Q9_GoalSpeed" value="B" required
+                                class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300">
+                            <span class="text-gray-700">I want to be a "Jack of all trades" and know a bit of
+                                everything.</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Q10 -->
+                <div>
+                    <h4 class="text-md font-bold text-gray-800 mb-2">10. Goal: Choice</h4>
+                    <div class="space-y-2">
+                        <label
+                            class="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                            <input type="radio" name="Q10_GoalChoice" value="A" required
+                                class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300">
+                            <span class="text-gray-700">I’d pick the "Safe & Known" successful path.</span>
+                        </label>
+                        <label
+                            class="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                            <input type="radio" name="Q10_GoalChoice" value="B" required
+                                class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300">
+                            <span class="text-gray-700">I’d pick the "Wildcard" path with high potential.</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="pt-5">
+                    <button type="submit"
+                        class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out transform hover:scale-[1.02]">
+                        Analyze My Profile
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

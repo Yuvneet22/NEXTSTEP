@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+jinja2
+sqlalchemy
+bcrypt
+python-multipart
+python-jose[cryptography]
+google-generativeai
+python-dotenv
