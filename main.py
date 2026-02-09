@@ -19,6 +19,7 @@ if GEMINI_API_KEY:
 
 import models
 from database import SessionLocal, engine, get_db
+from questions_data import questions
 
 # Create Tables
 models.Base.metadata.create_all(bind=engine)
@@ -109,6 +110,109 @@ async def logout(response: Response):
     response.delete_cookie("user_id")
     return response
 
+@app.get("/login/google")
+async def login_google(request: Request, db: Session = Depends(get_db)):
+    # Mock Google Login
+    email = "student@gmail.com"
+    user = db.query(models.User).filter(models.User.email == email).first()
+    
+    if not user:
+        # Create Google User if not exists
+        hashed_pw = get_password_hash("google_demo_pass")
+        user = models.User(email=email, hashed_password=hashed_pw, full_name="Google Student")
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    
+    response = RedirectResponse(url="/dashboard", status_code=status.HTTP_302_FOUND)
+    response.set_cookie(key="user_id", value=str(user.id))
+    return response
+
+# --- Assessment Data ---
+
+QUESTIONS = [
+    {
+        "id": "Q1_SocialBattery",
+        "title": "Social Battery",
+        "options": [
+            {"value": "A", "text": "A quiet morning with a book/coffee.", "image": "/static/images/assessment/q1_social_battery_a.png"},
+            {"value": "B", "text": "A high-energy concert with a crowd.", "image": "/static/images/assessment/q1_social_battery_b.png"}
+        ]
+    },
+    {
+        "id": "Q2_Communication",
+        "title": "Communication",
+        "options": [
+            {"value": "A", "text": "Sending a carefully crafted email.", "image": "/static/images/assessment/q2_communication_a.png"},
+            {"value": "B", "text": "Hopping on a quick, 'face-to-face' video call.", "image": "/static/images/assessment/q2_communication_b.png"}
+        ]
+    },
+    {
+        "id": "Q3_Workspace",
+        "title": "Workspace",
+        "options": [
+            {"value": "A", "text": "A private pod with noise-canceling headphones.", "image": "/static/images/assessment/q3_workspace_a.png"},
+            {"value": "B", "text": "A bustling co-working space with open desks.", "image": "/static/images/assessment/q3_workspace_b.png"}
+        ]
+    },
+    {
+        "id": "Q4_ProblemSolving",
+        "title": "Problem Solving",
+        "options": [
+            {"value": "A", "text": "Digging through Google/Manuals solo.", "image": "/static/images/assessment/q4_problem_solving_a.png"},
+            {"value": "B", "text": "Bouncing ideas off a group on a whiteboard.", "image": "/static/images/assessment/q4_problem_solving_b.png"}
+        ]
+    },
+    {
+        "id": "Q5_MeetingRole",
+        "title": "Meeting Role",
+        "options": [
+            {"value": "A", "text": "The person taking detailed, silent notes.", "image": "/static/images/assessment/q5_meeting_role_a.png"},
+            {"value": "B", "text": "The person leading the brainstorm out loud.", "image": "/static/images/assessment/q5_meeting_role_b.png"}
+        ]
+    },
+     {
+        "id": "Q6_LearningStyle",
+        "title": "Learning Style",
+        "options": [
+            {"value": "A", "text": "Watching a deep-dive documentary alone.", "image": "/static/images/assessment/q6_learning_style_a.png"},
+            {"value": "B", "text": "Attending a live, interactive workshop.", "image": "/static/images/assessment/q6_learning_style_b.png"}
+        ]
+    },
+    {
+        "id": "Q7_GoalPath",
+        "title": "Goal: Path",
+        "options": [
+            {"value": "A", "text": "A straight highway with a clear destination.", "image": "/static/images/assessment/q7_goal_path_a.png"},
+            {"value": "B", "text": "A winding trail through a beautiful forest.", "image": "/static/images/assessment/q7_goal_path_b.png"}
+        ]
+    },
+    {
+        "id": "Q8_GoalVision",
+        "title": "Goal: Vision",
+        "options": [
+            {"value": "A", "text": "I have a 'Dream Job' title in my head.", "image": "/static/images/assessment/q8_goal_vision_a.png"},
+            {"value": "B", "text": "I have a 'Lifestyle' I want, but the job is tbd.", "image": "/static/images/assessment/q8_goal_vision_b.png"}
+        ]
+    },
+    {
+        "id": "Q9_GoalSpeed",
+        "title": "Goal: Speed",
+        "options": [
+            {"value": "A", "text": "I want to specialize and be the best at one thing.", "image": "/static/images/assessment/q9_goal_speed_a.png"},
+            {"value": "B", "text": "I want to be a 'Jack of all trades' and know a bit of everything.", "image": "/static/images/assessment/q9_goal_speed_b.png"}
+        ]
+    },
+    {
+        "id": "Q10_GoalChoice",
+        "title": "Goal: Choice",
+        "options": [
+            {"value": "A", "text": "I’d pick the 'Safe & Known' successful path.", "image": "/static/images/assessment/q10_goal_choice_a.png"},
+            {"value": "B", "text": "I’d pick the 'Wildcard' path with high potential.", "image": "/static/images/assessment/q10_goal_choice_b.png"}
+        ]
+    }
+]
+
 # --- Assessment Routes ---
 
 @app.get("/assessment", response_class=HTMLResponse)
@@ -116,7 +220,7 @@ async def assessment_page(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
     if not user:
         return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
-    return templates.TemplateResponse("assessment.html", {"request": request, "user": user})
+    return templates.TemplateResponse("assessment.html", {"request": request, "user": user, "questions": QUESTIONS})
 
 @app.post("/assessment/submit")
 async def assessment_submit(
@@ -127,10 +231,25 @@ async def assessment_submit(
     if not user:
         return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
 
-    # 1. Collect Answers
+    # 1. Collect Answers & Map to Text
     form_data = await request.form()
-    answers = {k: v for k, v in form_data.items()}
+    user_answers_data = {}
     
+    # helper map
+    questions_map = {q["id"]: q for q in questions}
+
+    for key, value in form_data.items():
+        if key in questions_map:
+            q_data = questions_map[key]
+            # Find the selected option text
+            selected_option = next((opt for opt in q_data["options"] if opt["value"] == value), None)
+            if selected_option:
+                user_answers_data[key] = selected_option["text"]
+            else:
+                 user_answers_data[key] = value # Fallback
+        else:
+             user_answers_data[key] = value
+
     # 2. Construct Prompt
     prompt = f"""
     You are an expert student career psychologist.
@@ -167,8 +286,8 @@ async def assessment_submit(
       "reasoning": "String (2-3 sentences max)"
     }}
 
-    User Answers:
-    {json.dumps(answers, indent=2)}
+    User Answers (Text Descriptions of Visual Choices):
+    {json.dumps(user_answers_data, indent=2)}
     """
 
     # 3. Call Gemini
@@ -212,7 +331,7 @@ async def assessment_submit(
         goal_status=result_data.get("goal_status"),
         confidence=result_data.get("confidence"),
         reasoning=result_data.get("reasoning"),
-        raw_answers=answers
+        raw_answers=user_answers_data
     )
     db.add(new_result)
     db.commit()
@@ -241,3 +360,19 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
     assessment = db.query(models.AssessmentResult).filter(models.AssessmentResult.user_id == user.id).first()
     
     return templates.TemplateResponse("dashboard.html", {"request": request, "user": user, "assessment": assessment})
+
+@app.get("/admin", response_class=HTMLResponse)
+async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
+    # 1. Check if user is logged in
+    user = get_current_user(request, db)
+    if not user:
+         return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+
+    # 2. Fetch all users with their assessment results
+    # Using 'joinedload' strategy via relationship is best, but since relationship is defined, standard query works.
+    # However, to avoid N+1 problem, ideally we'd eager load, but for MVP separate queries or relationship loading is fine.
+    # SQLAlchemy default lazy loading will work as we iterate in template.
+    all_users = db.query(models.User).all()
+    
+    return templates.TemplateResponse("admin_dashboard.html", {"request": request, "user": user, "users": all_users})
+
