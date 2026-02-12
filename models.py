@@ -25,4 +25,18 @@ class AssessmentResult(Base):
     reasoning = Column(Text)
     raw_answers = Column(JSON)
     
+    # Phase 1 (Class Selection)
+    selected_class = Column(String, nullable=True) # "10", "12", "Above 12"
+
+    # Phase 3 Fields
+    phase3_result = Column(String, nullable=True)
+    phase3_answers = Column(JSON, nullable=True)
+    phase3_analysis = Column(Text, nullable=True)
+
+    # Phase 4 (Final Stream Assessment)
+    final_answers = Column(JSON, nullable=True) # Stores raw a/b/c/d answers
+    stream_scores = Column(JSON, nullable=True) # Stores {"PCM": 10, "COMM": 8...}
+    recommended_stream = Column(String, nullable=True) # e.g. "Science (PCM)"
+    final_analysis = Column(Text, nullable=True) # Detailed AI reasoning
+    
     user = relationship("User", back_populates="assessment")
