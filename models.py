@@ -38,5 +38,7 @@ class AssessmentResult(Base):
     stream_scores = Column(JSON, nullable=True) # Stores {"PCM": 10, "COMM": 8...}
     recommended_stream = Column(String, nullable=True) # e.g. "Science (PCM)"
     final_analysis = Column(Text, nullable=True) # Detailed AI reasoning
+    stream_pros = Column(JSON, nullable=True) # List of strings
+    stream_cons = Column(JSON, nullable=True) # List of strings
     
     user = relationship("User", back_populates="assessment")

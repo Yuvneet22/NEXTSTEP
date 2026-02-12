@@ -639,7 +639,26 @@ async def assessment_final_submit(request: Request, db: Session = Depends(get_db
         # --- AI Analysis ---
         if GEMINI_API_KEY:
             try:
-                # Construct Prompt
+                # Create Readable Answer Summary
+                readable_answers = []
+                
+                # Helper to find text
+                def get_question_text(q_id):
+                    for section in all_questions.values():
+                        for q in section["questions"]:
+                            if q["id"] == q_id:
+                                return q["question"], q["options"]
+                    return None, None
+
+                for q_id, ans_value in answers.items():
+                    q_text, options = get_question_text(q_id)
+                    if q_text:
+                        selected_option = next((opt for opt in options if opt["value"] == ans_value), None)
+                        ans_text = selected_option["text"] if selected_option else "Unknown"
+                        readable_answers.append(f"Question: {q_text}\nSelected Answer: {ans_text}")
+                
+                answers_summary = "\n\n".join(readable_answers)
+
                 phase2_cat = result.phase_2_category or "Unknown"
                 phase3_analysis = result.phase3_analysis or "Not completed"
                 
@@ -651,19 +670,23 @@ async def assessment_final_submit(request: Request, db: Session = Depends(get_db
                 - Deep Dive Analysis (Phase 3): {phase3_analysis}
 
                 Phase 4 Assessment Answers (Aptitude, Interests, Personality, Scenarios):
-                {json.dumps(answers, indent=2)}
+                {answers_summary}
 
                 Preliminary Rule-Based Scores:
                 {json.dumps(scores, indent=2)}
 
                 Task:
                 1. Recommend the SINGLE best academic stream from: "Science (PCM)", "Science (PCB)", "Commerce", "Arts & Humanities", "Vocational Studies".
-                2. Provide a "Final Analysis" (approx 150 words) explaining WHY this is the best fit. specific aptitude strengths, interest patterns, and personality traits from their answers. Explain why other streams might be less suitable if relevant.
+                2. Provide a "Final Analysis" (approx 150 words) explaining WHY this is the best fit. **IMPORTANT: Do NOT refer to question codes like FA1, FB2. Refer to the specific topics or skills mentioned in the answers.**
+                3. Provide a list of 3 "Pros" (Why this is good for the student).
+                4. Provide a list of 3 "Cons" (Challenges to consider).
 
                 Output must be valid JSON only:
                 {{
                   "recommended_stream": "Exact Stream Name",
-                  "final_analysis": "Detailed explanation..."
+                  "final_analysis": "Detailed explanation...",
+                  "stream_pros": ["Pro 1", "Pro 2", "Pro 3"],
+                  "stream_cons": ["Con 1", "Con 2", "Con 3"]
                 }}
                 """
                 
@@ -678,6 +701,10 @@ async def assessment_final_submit(request: Request, db: Session = Depends(get_db
                     result.recommended_stream = ai_data["recommended_stream"]
                 if "final_analysis" in ai_data:
                     result.final_analysis = ai_data["final_analysis"]
+                if "stream_pros" in ai_data:
+                    result.stream_pros = ai_data["stream_pros"]
+                if "stream_cons" in ai_data:
+                    result.stream_cons = ai_data["stream_cons"]
                     
             except Exception as e:
                 print(f"AI Analysis Failed: {e}")
