@@ -1,6 +1,8 @@
-
 import requests
 import json
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Define the endpoint URL
 url = "http://127.0.0.1:8000/assessment/submit"

@@ -1,7 +1,10 @@
-from database import SessionLocal
-import models
-from main import get_password_hash
 import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from app.database import SessionLocal
+from app import models
+from app.main import get_password_hash
 
 db = SessionLocal()
 

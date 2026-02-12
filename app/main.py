@@ -17,9 +17,9 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
-import models
-from database import SessionLocal, engine, get_db
-from questions_data import questions
+from . import models
+from .database import SessionLocal, engine, get_db
+from data.questions_data import questions
 
 # Create Tables
 models.Base.metadata.create_all(bind=engine)
@@ -27,8 +27,10 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI(title="NextStep")
 
 # Mount Static & Templates
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
+# Mount Static & Templates
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
+templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 # pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto"]) # Removed
 
 def verify_password(plain_password, hashed_password):
@@ -431,7 +433,7 @@ async def delete_user(user_id: int, request: Request, db: Session = Depends(get_
 
 # --- Phase 3 Routes ---
 
-from questions_phase3 import CATEGORY_SCENARIOS_MAP
+from data.questions_phase3 import CATEGORY_SCENARIOS_MAP
 
 @app.get("/assessment/phase3", response_class=HTMLResponse)
 async def assessment_phase3(request: Request, db: Session = Depends(get_db)):
@@ -517,7 +519,7 @@ async def assessment_phase3_submit(
 
 # --- Phase 4 Routes (Final Stream Assessment) ---
 
-from questions_final import all_questions, section_a_questions, section_b_questions, section_c_questions, section_d_questions
+from data.questions_final import all_questions, section_a_questions, section_b_questions, section_c_questions, section_d_questions
 
 @app.get("/assessment/final", response_class=HTMLResponse)
 async def assessment_final(request: Request, db: Session = Depends(get_db)):
