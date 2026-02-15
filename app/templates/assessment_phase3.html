@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Advanced Assessment{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6 bg-indigo-50">
+            <h3 class="text-lg leading-6 font-medium text-indigo-900">Phase 3: Deep Dive Scenarios</h3>
+            <p class="mt-1 max-w-2xl text-sm text-indigo-600">
+                You have identified as a <strong>{{ category_name }}</strong>. These scenarios will help refine your
+                work
+                style profile.
+            </p>
+        </div>
+        <div class="border-t border-gray-200 px-4 py-5 sm:p-6">
+            <form action="/assessment/phase3/submit" method="POST" class="space-y-12">
+
+                {% for scenario in scenarios %}
+                <div class="border-b border-gray-200 pb-10 last:border-0 last:pb-0">
+                    <h4 class="text-lg font-bold text-gray-900 mb-2">{{ scenario.title }}</h4>
+                    <p class="text-gray-700 mb-6 italic border-l-4 border-indigo-200 pl-4 py-2 bg-gray-50 rounded-r-md">
+                        "{{ scenario.story }}"
+                    </p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {% for opt in scenario.options %}
+                        <label
+                            class="relative flex cursor-pointer rounded-lg border bg-white p-4 shadow-sm focus:outline-none hover:border-indigo-400 hover:ring-1 hover:ring-indigo-400 peer-checked:border-indigo-600 peer-checked:ring-1 peer-checked:ring-indigo-600">
+                            <input type="radio" name="{{ scenario.id }}" value="{{ opt.value }}" class="sr-only peer"
+                                required>
+                            <span class="flex flex-1">
+                                <span class="flex flex-col">
+                                    <span class="block text-sm font-medium text-gray-900 mb-1">Option {{ opt.value
+                                        }}</span>
+                                    <span class="block text-sm text-gray-500">{{ opt.text }}</span>
+                                </span>
+                            </span>
+                            <span class="h-5 w-5 text-indigo-600 invisible peer-checked:visible" aria-hidden="true">
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+                                    fill="currentColor">
+                                    <path fill-rule="evenodd"
+                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                            </span>
+                            <!-- Visual indication of selection state is handled by peer-checked classes on the parent label via the input -->
+                            <div class="absolute -inset-px rounded-lg border-2 border-transparent peer-checked:border-indigo-600 pointer-events-none"
+                                aria-hidden="true"></div>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+
+                <div class="pt-5">
+                    <button type="submit"
+                        class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out">
+                        Analyze Deep Dive
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
