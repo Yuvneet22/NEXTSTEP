@@ -200,6 +200,35 @@
                                 <div class="ml-5">
                                     <h4 class="text-lg font-bold text-slate-900">{{ option.title }}</h4>
                                     <p class="mt-2 text-slate-600 text-sm leading-relaxed">{{ option.reason }}</p>
+
+                                    <!-- Pros & Cons for this Option -->
+                                    <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        {% if option.pros %}
+                                        <div class="bg-emerald-50 p-3 rounded-lg border border-emerald-100">
+                                            <h5 class="text-xs font-bold text-emerald-800 uppercase mb-2">Pros</h5>
+                                            <ul class="space-y-1">
+                                                {% for pro in option.pros %}
+                                                <li class="flex items-start text-xs text-emerald-900">
+                                                    <span class="mr-1.5">•</span> {{ pro }}
+                                                </li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                        {% endif %}
+
+                                        {% if option.cons %}
+                                        <div class="bg-rose-50 p-3 rounded-lg border border-rose-100">
+                                            <h5 class="text-xs font-bold text-rose-800 uppercase mb-2">Cons</h5>
+                                            <ul class="space-y-1">
+                                                {% for con in option.cons %}
+                                                <li class="flex items-start text-xs text-rose-900">
+                                                    <span class="mr-1.5">•</span> {{ con }}
+                                                </li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                        {% endif %}
+                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -8,18 +8,73 @@ import bcrypt
 import os
 import json
 import google.generativeai as genai
+from groq import Groq
 from dotenv import load_dotenv
 
 # Load Env
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
+groq_client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
+
+def generate_content_with_fallback(prompt):
+    """
+    Attempts to generate content using Gemini.
+    Falls back to Groq (Llama 3) if Gemini fails.
+    Returns cleaned text (JSON-ready).
+    """
+    try:
+        # Try Gemini First
+        model = genai.GenerativeModel("gemini-flash-latest")
+        response = model.generate_content(prompt)
+        text = response.text
+    except Exception as e:
+        print(f"Gemini Error (Switching to Groq): {e}")
+        if not groq_client:
+            raise e # No fallback available
+        
+        try:
+            # Fallback to Groq
+            chat_completion = groq_client.chat.completions.create(
+                messages=[
+                    {
+                        "role": "user",
+                        "content": prompt,
+                    }
+                ],
+                model="llama-3.3-70b-versatile",
+            )
+            text = chat_completion.choices[0].message.content
+        except Exception as groq_e:
+            raise Exception(f"Both APIs failed. Gemini: {e}, Groq: {groq_e}")
+
+    # Robust JSON Extraction
+    import re
+    try:
+        # Find JSON object between first { and last }
+        match = re.search(r"\{.*\}", text, re.DOTALL)
+        if match:
+            text = match.group(0)
+        
+        # Remove markdown code blocks if still present
+        text = text.replace("```json", "").replace("```", "").strip()
+        
+        # Remove trailing commas
+        text = re.sub(r",\s*([\]}])", r"\1", text)
+        
+        return text
+    except Exception:
+        return text # Return original if extraction fails, let json.loads raise the error
+
 from . import models
 from .database import SessionLocal, engine, get_db
 from data.questions_data import questions
+from data.questions_12th import questions_12th
+from data.questions_above_12th import questions_above_12th
 
 # Create Tables
 models.Base.metadata.create_all(bind=engine)
@@ -83,9 +138,8 @@ async def signup(
     db.refresh(new_user)
     
     # Login & Redirect
-    response = RedirectResponse(url="/dashboard", status_code=status.HTTP_302_FOUND)
-    response.set_cookie(key="user_id", value=str(new_user.id))
-    return response
+    # Redirect to Login (No auto-login)
+    return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
@@ -325,20 +379,18 @@ async def assessment_submit(
             "reasoning": "Demo Mode: API Key missing. You showed balanced traits."
         }
     else:
+        # Generate Analysis using Fallback Strategy
         try:
-            model = genai.GenerativeModel("gemini-flash-latest")
-            response = model.generate_content(prompt)
-            # Clean response text (sometimes models output markdown blocks)
-            clean_text = response.text.replace("```json", "").replace("```", "").strip()
+            clean_text = generate_content_with_fallback(prompt)
             result_data = json.loads(clean_text)
         except Exception as e:
-            print(f"Gemini Error: {e}")
+            print(f"Analysis Error: {e}")
             result_data = {
-                 "personality": "Error",
-                 "goal_status": "Error",
-                 "phase_2_category": "System Error",
-                 "confidence": 0.0,
-                 "reasoning": "Could not process assessment at this time."
+                "phase_2_category": "Focused Specialist",
+                "personality": "Ambivert",
+                "goal_status": "Exploring",
+                "confidence": 0.5,
+                "reasoning": "AI Analysis unavailable. Default profile assigned based on answers."
             }
 
     # 4. Save to DB
@@ -472,7 +524,11 @@ async def assessment_phase3_submit(
     if not user:
         return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
 
-    form_data = await request.form()
+    try:
+        form_data = await request.form()
+    except Exception:
+        # Client disconnected or bad request
+        return RedirectResponse(url="/assessment/phase3", status_code=status.HTTP_302_FOUND)
     answers = {}
     
     for key, value in form_data.items():
@@ -501,11 +557,9 @@ async def assessment_phase3_submit(
     """
     
     try:
-         model = genai.GenerativeModel("gemini-flash-latest")
-         response = model.generate_content(prompt_p3)
-         result.phase3_analysis = response.text.strip()
-    except:
-         result.phase3_analysis = "Analysis unavailable at this time."
+         result.phase3_analysis = generate_content_with_fallback(prompt_p3)
+    except Exception as e:
+         result.phase3_analysis = f"Analysis unavailable at this time. ({str(e)})"
         
     db.commit()
 
@@ -555,6 +609,7 @@ async def assessment_final_submit(request: Request, db: Session = Depends(get_db
     form_data = await request.form()
     answers = {}
     mode = form_data.get("mode", "10th") # Default to 10th if missing
+    print(f"DEBUG: Submitting Final Assessment. Mode: {mode}")
 
     for key, value in form_data.items():
         if key != "mode":
@@ -669,10 +724,10 @@ async def assessment_final_submit(request: Request, db: Session = Depends(get_db
                 
                 # Dynamic Prompt Construction based on Class
                 if mode == "10th":
-                    task_instruction = """
-                    1. Recommend the SINGLE best academic stream from: "Science (PCM)", "Science (PCB)", "Commerce", "Arts & Humanities", "Vocational Studies".
-                    2. Provide a "Final Analysis" (approx 150 words) explaining WHY this is the best fit.
-                    3. Provide 3 "Pros" (Why this is good for the student).
+                    task_instruction = f"""
+                    1. The student's calculated best fit based on answers is "{winner_name}". Validate and Analyze this choice.
+                    2. Provide a "Final Analysis" (approx 150 words) explaining WHY {winner_name} is the best fit based on their answers.
+                    3. Provide 3 "Pros" (Why {winner_name} is good for the student).
                     4. Provide 3 "Cons" (Challenges to consider).
                     """
                     output_format = """
@@ -687,16 +742,32 @@ async def assessment_final_submit(request: Request, db: Session = Depends(get_db
                     task_instruction = """
                     1. Identify the Top 3 Career Goals / University Majors best suited for this student based on their scenarios.
                     2. For EACH goal, provide a specific "Reason" why they should go for that.
-                    3. Provide a "Final Analysis" (approx 100 words) summarizing their potential.
+                    3. For EACH goal, provide 2 "Pros" (Advantages) and 2 "Cons" (Challenges).
+                    4. Provide a "Final Analysis" (approx 100 words) summarizing their potential.
                     """
                     output_format = """
                     {
                       "recommended_stream": "Primary Field (e.g. Technology, Healthcare, Creative Arts)",
                       "final_analysis": "Summary...",
                       "goal_options": [
-                        {"title": "Option 1 Title", "reason": "Why they should choose this..."},
-                        {"title": "Option 2 Title", "reason": "Why they should choose this..."},
-                        {"title": "Option 3 Title", "reason": "Why they should choose this..."}
+                        {
+                            "title": "Option 1 Title", 
+                            "reason": "Why they should choose this...",
+                            "pros": ["Pro 1", "Pro 2"],
+                            "cons": ["Con 1", "Con 2"]
+                        },
+                        {
+                            "title": "Option 2 Title", 
+                            "reason": "Why they should choose this...",
+                            "pros": ["Pro 1", "Pro 2"],
+                            "cons": ["Con 1", "Con 2"]
+                        },
+                        {
+                            "title": "Option 3 Title", 
+                            "reason": "Why they should choose this...",
+                            "pros": ["Pro 1", "Pro 2"],
+                            "cons": ["Con 1", "Con 2"]
+                        }
                       ]
                     }
                     """
@@ -704,16 +775,32 @@ async def assessment_final_submit(request: Request, db: Session = Depends(get_db
                     task_instruction = """
                     1. Identify the Top 3 Professional Roles / Niche Career Paths best suited for this student.
                     2. For EACH goal, provide a specific "Reason" why they should pursue it.
-                    3. Provide a "Final Analysis" (approx 100 words) on their professional outlook.
+                    3. For EACH goal, provide 2 "Pros" (Advantages) and 2 "Cons" (Challenges).
+                    4. Provide a "Final Analysis" (approx 100 words) on their professional outlook.
                     """
                     output_format = """
                     {
                       "recommended_stream": "Primary Field / Industry",
                       "final_analysis": "Summary...",
                       "goal_options": [
-                        {"title": "Role 1 Title", "reason": "Why this fits..."},
-                        {"title": "Role 2 Title", "reason": "Why this fits..."},
-                        {"title": "Role 3 Title", "reason": "Why this fits..."}
+                        {
+                            "title": "Role 1 Title", 
+                            "reason": "Why this fits...",
+                            "pros": ["Pro 1", "Pro 2"],
+                            "cons": ["Con 1", "Con 2"]
+                        },
+                        {
+                            "title": "Role 2 Title", 
+                            "reason": "Why this fits...",
+                            "pros": ["Pro 1", "Pro 2"],
+                            "cons": ["Con 1", "Con 2"]
+                        },
+                        {
+                            "title": "Role 3 Title", 
+                            "reason": "Why this fits...",
+                            "pros": ["Pro 1", "Pro 2"],
+                            "cons": ["Con 1", "Con 2"]
+                        }
                       ]
                     }
                     """
@@ -729,17 +816,17 @@ async def assessment_final_submit(request: Request, db: Session = Depends(get_db
                 Task:
                 {task_instruction}
 
-                Output MUST be valid JSON only matching this structure:
+                Output MUST be raw JSON only matching this structure. Do not include markdown formatting or explanation text.
                 {output_format}
                 """
                 
-                model = genai.GenerativeModel("gemini-flash-latest")
-                response = model.generate_content(prompt)
-                
-                text = response.text.replace("```json", "").replace("```", "").strip()
+                # Generate Content with Fallback
+                text = generate_content_with_fallback(prompt)
+                print(f"DEBUG: AI Raw Text: {text}")
                 ai_data = json.loads(text)
                 
-                if "recommended_stream" in ai_data: result.recommended_stream = ai_data["recommended_stream"]
+                if mode != "10th" and "recommended_stream" in ai_data: 
+                     result.recommended_stream = ai_data["recommended_stream"]
                 if "final_analysis" in ai_data: result.final_analysis = ai_data["final_analysis"]
                 
                 # Handling Data Mapping
