@@ -500,17 +500,12 @@ async def assessment_phase3_submit(
     Reflect on how they fit into the '{category}' archetype based on these nuances.
     """
     
-    #     try:
-    #          model = genai.GenerativeModel("gemini-flash-latest")
-    #          response = model.generate_content(prompt_p3)
-    #          result.phase3_analysis = response.text.strip()
-    #     except:
-    #          result.phase3_analysis = "Analysis unavailable at this time."
-    # else:
-    #     result.phase3_analysis = f"Demo Analysis for {category}: You show a strong preference for deep work and individual contribution."
-    
-    # Placeholder for simple analysis without API
-    result.phase3_analysis = f"Analysis for {category}: Based on your scenario choices, you show a consistent pattern of behavior aligned with your archetype."
+    try:
+         model = genai.GenerativeModel("gemini-flash-latest")
+         response = model.generate_content(prompt_p3)
+         result.phase3_analysis = response.text.strip()
+    except:
+         result.phase3_analysis = "Analysis unavailable at this time."
         
     db.commit()
 
@@ -520,6 +515,8 @@ async def assessment_phase3_submit(
 # --- Phase 4 Routes (Final Stream Assessment) ---
 
 from data.questions_final import all_questions, section_a_questions, section_b_questions, section_c_questions, section_d_questions
+from data.questions_12th import questions_12th
+from data.questions_above_12th import questions_above_12th
 
 @app.get("/assessment/final", response_class=HTMLResponse)
 async def assessment_final(request: Request, db: Session = Depends(get_db)):
@@ -527,11 +524,27 @@ async def assessment_final(request: Request, db: Session = Depends(get_db)):
     if not user:
         return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
     
-    return templates.TemplateResponse("assessment_final.html", {
+    # Get user class selection
+    result = db.query(models.AssessmentResult).filter(models.AssessmentResult.user_id == user.id).first()
+    selected_class = result.selected_class if result else "10th" # Default to 10th if not found
+
+    context = {
         "request": request, 
-        "user": user, 
-        "sections": all_questions
-    })
+        "user": user,
+    }
+
+    if selected_class == "12th":
+        context["mode"] = "12th"
+        context["questions"] = questions_12th
+    elif selected_class == "Above 12th": # Ensure this matches the exact string saved in Phase 1
+        context["mode"] = "above"
+        context["questions"] = questions_above_12th
+    else:
+        # Default to Class 10th (Existing Logic)
+        context["mode"] = "10th"
+        context["sections"] = all_questions
+
+    return templates.TemplateResponse("assessment_final.html", context)
 
 @app.post("/assessment/final/submit")
 async def assessment_final_submit(request: Request, db: Session = Depends(get_db)):
@@ -541,178 +554,208 @@ async def assessment_final_submit(request: Request, db: Session = Depends(get_db
 
     form_data = await request.form()
     answers = {}
+    mode = form_data.get("mode", "10th") # Default to 10th if missing
+
     for key, value in form_data.items():
-        answers[key] = value
+        if key != "mode":
+            answers[key] = value
         
-    # --- Scoring Logic ---
-    scores = {
-        "PCM": 0,
-        "PCB": 0,
-        "COMM": 0,
-        "ARTS": 0,
-        "VOC": 0
-    }
-    
-    def add_points(streams, points=1):
-        for s in streams:
-            if s in scores:
-                scores[s] += points
-
-    # 1. Section A (Correctness -> Mapped Streams)
-    for q in section_a_questions:
-        user_ans = answers.get(q["id"])
-        if user_ans == q["correct_value"]:
-            add_points(q["mapped_streams"], points=2)
-
-    # 2. Section B, C, D (Preference Mapping)
-    preference_questions = section_b_questions + section_c_questions + section_d_questions
-    
-    for q in preference_questions:
-        user_ans = answers.get(q["id"])
-        if not user_ans: continue
-        
-        # Check if option has explicit stream mapping
-        selected_opt = next((opt for opt in q["options"] if opt["value"] == user_ans), None)
-        
-        if selected_opt and "stream" in selected_opt:
-             add_points([selected_opt["stream"]], points=1)
-        else:
-            # Fallback based on value a/b/c/d for Section D
-            if user_ans == "a":
-                # Distinguish PCB vs PCM for Sec D based on keywords
-                txt = q["question"] + " " + (selected_opt["text"] if selected_opt else "")
-                if any(x in txt.lower() for x in ["plant", "health", "bio", "nutri", "species", "cures"]):
-                     add_points(["PCB"], points=1)
-                else:
-                     add_points(["PCM"], points=1)
-            elif user_ans == "b":
-                add_points(["COMM"], points=1)
-            elif user_ans == "c":
-                add_points(["ARTS"], points=1)
-            elif user_ans == "d":
-                add_points(["VOC"], points=1)
-
-    # 3. Phase 2 Influence (Combining Results)
-    # Fetch existing result to get Phase 2 Category
+    # fetch result object
     result = db.query(models.AssessmentResult).filter(models.AssessmentResult.user_id == user.id).first()
-    if result and result.phase_2_category:
-        cat = result.phase_2_category
-        # Bonus Points Map
-        # Focused Specialist -> Science/Deep Work
-        # Quiet Explorer -> Research/Science/Arts
-        # Visionary Leader -> Commerce/Leadership
-        # Strategic Builder -> Engineering (PCM) or Commerce
-        # Adaptive Explorer -> Arts/Humanities or Vocational
-        # Dynamic Generalist -> Broad interest
+    
+    # --- Logic Branching based on Mode ---
+    
+    if mode == "10th":
+        # ... EXISTING LOGIC FOR CLASS 10 (PCM/PCB/COMM/ARTS/VOC) ...
+        # (Keeping the original rule-based scoring for Class 10 reliability)
+        scores = { "PCM": 0, "PCB": 0, "COMM": 0, "ARTS": 0, "VOC": 0 }
         
-        if cat == "Focused Specialist":
-            add_points(["PCM", "PCB"], points=3)
-        elif cat == "Quiet Explorer":
-            add_points(["PCB", "ARTS"], points=3)
-        elif cat == "Visionary Leader":
-            add_points(["COMM", "ARTS"], points=3)
-        elif cat == "Strategic Builder":
-            add_points(["PCM", "COMM"], points=3)
-        elif cat == "Adaptive Explorer":
-            add_points(["ARTS", "VOC"], points=3)
-        elif cat == "Dynamic Generalist":
-            add_points(["COMM", "VOC"], points=3)
+        def add_points(streams, points=1):
+            for s in streams:
+                if s in scores: scores[s] += points
 
-    # Determine Winner
-    sorted_scores = sorted(scores.items(), key=lambda item: item[1], reverse=True)
-    winner_code = sorted_scores[0][0]
-    
-    code_map = {
-        "PCM": "Science (PCM)",
-        "PCB": "Science (PCB)",
-        "COMM": "Commerce",
-        "ARTS": "Arts & Humanities",
-        "VOC": "Vocational Studies"
-    }
-    winner_name = code_map.get(winner_code, winner_code)
-    
-    
-    # Save to DB (Preliminary)
+        # 1. Section A
+        for q in section_a_questions:
+            if answers.get(q["id"]) == q["correct_value"]:
+                add_points(q["mapped_streams"], points=2)
+
+        # 2. Preference Sections
+        preference_questions = section_b_questions + section_c_questions + section_d_questions
+        for q in preference_questions:
+            user_ans = answers.get(q["id"])
+            if not user_ans: continue
+            selected_opt = next((opt for opt in q["options"] if opt["value"] == user_ans), None)
+            if selected_opt and "stream" in selected_opt:
+                 add_points([selected_opt["stream"]], points=1)
+            else:
+                if user_ans == "a":
+                    txt = q["question"] + " " + (selected_opt["text"] if selected_opt else "")
+                    if any(x in txt.lower() for x in ["plant", "health", "bio", "nutri", "species", "cures"]):
+                         add_points(["PCB"], points=1)
+                    else:
+                         add_points(["PCM"], points=1)
+                elif user_ans == "b": add_points(["COMM"], points=1)
+                elif user_ans == "c": add_points(["ARTS"], points=1)
+                elif user_ans == "d": add_points(["VOC"], points=1)
+
+        # 3. Phase 2 Influence
+        if result and result.phase_2_category:
+            cat = result.phase_2_category
+            if cat == "Focused Specialist": add_points(["PCM", "PCB"], points=3)
+            elif cat == "Quiet Explorer": add_points(["PCB", "ARTS"], points=3)
+            elif cat == "Visionary Leader": add_points(["COMM", "ARTS"], points=3)
+            elif cat == "Strategic Builder": add_points(["PCM", "COMM"], points=3)
+            elif cat == "Adaptive Explorer": add_points(["ARTS", "VOC"], points=3)
+            elif cat == "Dynamic Generalist": add_points(["COMM", "VOC"], points=3)
+
+        sorted_scores = sorted(scores.items(), key=lambda item: item[1], reverse=True)
+        winner_code = sorted_scores[0][0]
+        code_map = { "PCM": "Science (PCM)", "PCB": "Science (PCB)", "COMM": "Commerce", "ARTS": "Arts & Humanities", "VOC": "Vocational Studies" }
+        winner_name = code_map.get(winner_code, winner_code)
+        
+        # Save Score & Result
+        if result:
+            result.stream_scores = scores
+            result.recommended_stream = winner_name
+
+    else:
+        # --- Logic for Class 12th & Above (No fixed scoring, pure AI Analysis) ---
+        # We don't have a specific "stream" to recommend in the same way, but we will use the field for the primary recommendation
+        scores = {} # Not used
+        winner_name = "See Analysis" # Placeholder
+        if result:
+            result.stream_scores = {}
+            result.recommended_stream = "AI Analyzing..." # Temporary
+
+    # --- Common Save ---
     if result:
         result.final_answers = answers
-        result.stream_scores = scores
-        result.recommended_stream = winner_name # Default to manual score
         
-        # --- AI Analysis ---
+        # --- AI Analysis (Gemini) ---
         if GEMINI_API_KEY:
             try:
-                # Create Readable Answer Summary
+                # Prepare Prompt based on Mode
                 readable_answers = []
                 
-                # Helper to find text
-                def get_question_text(q_id):
-                    for section in all_questions.values():
-                        for q in section["questions"]:
-                            if q["id"] == q_id:
-                                return q["question"], q["options"]
-                    return None, None
-
-                for q_id, ans_value in answers.items():
-                    q_text, options = get_question_text(q_id)
-                    if q_text:
-                        selected_option = next((opt for opt in options if opt["value"] == ans_value), None)
-                        ans_text = selected_option["text"] if selected_option else "Unknown"
-                        readable_answers.append(f"Question: {q_text}\nSelected Answer: {ans_text}")
+                if mode == "10th":
+                     def get_question_text(q_id):
+                        for section in all_questions.values():
+                            for q in section["questions"]:
+                                if q["id"] == q_id: return q["question"], q["options"]
+                        return None, None
+                     for q_id, ans_value in answers.items():
+                        q_text, options = get_question_text(q_id)
+                        if q_text:
+                            selected_option = next((opt for opt in options if opt["value"] == ans_value), None)
+                            ans_text = selected_option["text"] if selected_option else "Unknown"
+                            readable_answers.append(f"Question: {q_text}\nSelected Answer: {ans_text}")
                 
+                elif mode == "12th":
+                     # Use questions_12th data
+                     q_map = {q["id"]: q for q in questions_12th}
+                     for q_id, ans_text in answers.items():
+                         if q_id in q_map:
+                             readable_answers.append(f"Scenario: {q_map[q_id]['title']}\nInsight: {q_map[q_id]['insight']}\nUser Response: {ans_text}")
+
+                elif mode == "above":
+                     # Use questions_above_12th data
+                     q_map = {q["id"]: q for q in questions_above_12th}
+                     for q_id, ans_text in answers.items():
+                         if q_id in q_map:
+                             readable_answers.append(f"Question: {q_map[q_id]['title']}\nContext: {q_map[q_id]['insight']}\nUser Response: {ans_text}")
+
                 answers_summary = "\n\n".join(readable_answers)
-
                 phase2_cat = result.phase_2_category or "Unknown"
-                phase3_analysis = result.phase3_analysis or "Not completed"
                 
+                # Dynamic Prompt Construction based on Class
+                if mode == "10th":
+                    task_instruction = """
+                    1. Recommend the SINGLE best academic stream from: "Science (PCM)", "Science (PCB)", "Commerce", "Arts & Humanities", "Vocational Studies".
+                    2. Provide a "Final Analysis" (approx 150 words) explaining WHY this is the best fit.
+                    3. Provide 3 "Pros" (Why this is good for the student).
+                    4. Provide 3 "Cons" (Challenges to consider).
+                    """
+                    output_format = """
+                    {
+                      "recommended_stream": "Exact Stream Name",
+                      "final_analysis": "Detailed explanation...",
+                      "stream_pros": ["Pro 1", "Pro 2", "Pro 3"],
+                      "stream_cons": ["Con 1", "Con 2", "Con 3"]
+                    }
+                    """
+                elif mode == "12th":
+                    task_instruction = """
+                    1. Identify the Top 3 Career Goals / University Majors best suited for this student based on their scenarios.
+                    2. For EACH goal, provide a specific "Reason" why they should go for that.
+                    3. Provide a "Final Analysis" (approx 100 words) summarizing their potential.
+                    """
+                    output_format = """
+                    {
+                      "recommended_stream": "Primary Field (e.g. Technology, Healthcare, Creative Arts)",
+                      "final_analysis": "Summary...",
+                      "goal_options": [
+                        {"title": "Option 1 Title", "reason": "Why they should choose this..."},
+                        {"title": "Option 2 Title", "reason": "Why they should choose this..."},
+                        {"title": "Option 3 Title", "reason": "Why they should choose this..."}
+                      ]
+                    }
+                    """
+                else: # Above 12th
+                    task_instruction = """
+                    1. Identify the Top 3 Professional Roles / Niche Career Paths best suited for this student.
+                    2. For EACH goal, provide a specific "Reason" why they should pursue it.
+                    3. Provide a "Final Analysis" (approx 100 words) on their professional outlook.
+                    """
+                    output_format = """
+                    {
+                      "recommended_stream": "Primary Field / Industry",
+                      "final_analysis": "Summary...",
+                      "goal_options": [
+                        {"title": "Role 1 Title", "reason": "Why this fits..."},
+                        {"title": "Role 2 Title", "reason": "Why this fits..."},
+                        {"title": "Role 3 Title", "reason": "Why this fits..."}
+                      ]
+                    }
+                    """
+
                 prompt = f"""
-                You are an expert career counselor for Class 10 students. Analyze the following student profile to recommend the best academic stream.
+                You are an expert career counselor. Analyze this profile for a {mode} grade student.
 
-                Student Profile:
-                - Identified Archetype (Phase 2): {phase2_cat}
-                - Deep Dive Analysis (Phase 3): {phase3_analysis}
-
-                Phase 4 Assessment Answers (Aptitude, Interests, Personality, Scenarios):
+                Profile:
+                - Archetype: {phase2_cat}
+                - Answers:
                 {answers_summary}
 
-                Preliminary Rule-Based Scores:
-                {json.dumps(scores, indent=2)}
-
                 Task:
-                1. Recommend the SINGLE best academic stream from: "Science (PCM)", "Science (PCB)", "Commerce", "Arts & Humanities", "Vocational Studies".
-                2. Provide a "Final Analysis" (approx 150 words) explaining WHY this is the best fit. **IMPORTANT: Do NOT refer to question codes like FA1, FB2. Refer to the specific topics or skills mentioned in the answers.**
-                3. Provide a list of 3 "Pros" (Why this is good for the student).
-                4. Provide a list of 3 "Cons" (Challenges to consider).
+                {task_instruction}
 
-                Output must be valid JSON only:
-                {{
-                  "recommended_stream": "Exact Stream Name",
-                  "final_analysis": "Detailed explanation...",
-                  "stream_pros": ["Pro 1", "Pro 2", "Pro 3"],
-                  "stream_cons": ["Con 1", "Con 2", "Con 3"]
-                }}
+                Output MUST be valid JSON only matching this structure:
+                {output_format}
                 """
                 
                 model = genai.GenerativeModel("gemini-flash-latest")
                 response = model.generate_content(prompt)
                 
-                # clean formatting if necessary (remove ```json ... ```)
                 text = response.text.replace("```json", "").replace("```", "").strip()
                 ai_data = json.loads(text)
                 
-                if "recommended_stream" in ai_data:
-                    result.recommended_stream = ai_data["recommended_stream"]
-                if "final_analysis" in ai_data:
-                    result.final_analysis = ai_data["final_analysis"]
-                if "stream_pros" in ai_data:
-                    result.stream_pros = ai_data["stream_pros"]
-                if "stream_cons" in ai_data:
-                    result.stream_cons = ai_data["stream_cons"]
+                if "recommended_stream" in ai_data: result.recommended_stream = ai_data["recommended_stream"]
+                if "final_analysis" in ai_data: result.final_analysis = ai_data["final_analysis"]
+                
+                # Handling Data Mapping
+                if mode == "10th":
+                    if "stream_pros" in ai_data: result.stream_pros = ai_data["stream_pros"]
+                    if "stream_cons" in ai_data: result.stream_cons = ai_data["stream_cons"]
+                else:
+                    # Map 'goal_options' to 'stream_pros' for storage
+                    if "goal_options" in ai_data: result.stream_pros = ai_data["goal_options"]
+                    result.stream_cons = [] # Not used for 12th/Above
                     
             except Exception as e:
                 print(f"AI Analysis Failed: {e}")
-                result.final_analysis = f"AI Analysis Unavailable. Recommendation based on scoring rules. (Error: {str(e)})"
+                result.final_analysis = f"AI Analysis Unavailable. (Error: {str(e)})"
         else:
-             result.final_analysis = "AI Analysis Unavailable (API Key missing). Recommendation based on scoring rules."
+             result.final_analysis = "AI Analysis Unavailable (API Key missing)."
 
         db.commit()
 
