@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, status, Request, Form, Response
+from pydantic import BaseModel
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -847,3 +848,87 @@ async def assessment_final_submit(request: Request, db: Session = Depends(get_db
         db.commit()
 
     return RedirectResponse(url="/assessment/result", status_code=status.HTTP_302_FOUND)
+
+
+# --- Chatbot Routes ---
+
+class ChatRequest(BaseModel):
+    message: str
+
+@app.get("/chatbot", response_class=HTMLResponse)
+async def chatbot_page(request: Request, db: Session = Depends(get_db)):
+    user = get_current_user(request, db)
+    if not user:
+        return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+    return templates.TemplateResponse("chatbot.html", {"request": request, "user": user})
+
+@app.post("/chatbot/message")
+async def chatbot_message(request: Request, chat_req: ChatRequest, db: Session = Depends(get_db)):
+    user = get_current_user(request, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    user_message = chat_req.message
+    
+    # 1. Build Context from DB
+    result = db.query(models.AssessmentResult).filter(models.AssessmentResult.user_id == user.id).first()
+    
+    context_str = f"User Name: {user.full_name}\n"
+    if result:
+        if result.selected_class:
+            context_str += f"Class/Grade: {result.selected_class}\n"
+        if result.phase_2_category:
+            context_str += f"Personality Archetype: {result.phase_2_category}\n"
+        if result.recommended_stream:
+            context_str += f"Recommended Path: {result.recommended_stream}\n"
+        
+        # Add slight detail if available
+        if result.phase3_analysis:
+             context_str += f"Work Style Analysis: {result.phase3_analysis[:200]}...\n"
+
+    # 2. Construct System Prompt
+    prompt = f"""
+    You are 'NextStep AI', an expert career counselor and student mentor.
+    
+    USER CONTEXT:
+    {context_str}
+
+    YOUR GOAL:
+    Help the student with their career questions.
+    - If they have assessment results, REFER TO THEM to make advice personalized.
+    - If they don't, ask clarifying questions to help them.
+    - Be encouraging, positive, and realistic.
+    - Keep answers concise (under 200 words) unless asked for deep detail.
+    - Use Markdown for bolding key terms or lists.
+
+    STUDENT MESSAGE:
+    {user_message}
+    """
+    
+    # 3. Call Gemini
+    response_text = ""
+    try:
+        if GEMINI_API_KEY:
+            # We use the same helper function but it tries to parse JSON usually.
+            # However, our helper 'generate_content_with_fallback' returns *string* if JSON fails,
+            # but it *tries* to extract JSON. 
+            # We want raw text here.
+            # Let's direct call the model or use a cleaner prompt that doesn't look like JSON to the parser.
+            # Actually, let's just use the helper but be aware it might strip things if it looks like JSON.
+            # To be safe, let's just call genai directly if available to avoid the JSON-stripping logic of the helper?
+            # Or just use the helper, it returns text if it can't find JSON.
+            
+            # The helper 'generate_content_with_fallback' has specific JSON extraction logic that might be aggressive.
+            # Let's just use a direct call for chat to be safe and raw.
+            
+            model = genai.GenerativeModel("gemini-flash-latest")
+            resp = model.generate_content(prompt)
+            response_text = resp.text
+        else:
+             response_text = "I'm in demo mode (No API Key). Based on your profile, I'd suggest exploring based on your interests! (Please set GEMINI_API_KEY to get real AI responses)"
+    except Exception as e:
+        print(f"Chat Error: {e}")
+        response_text = "I'm having a little trouble thinking right now. Could you ask that again?"
+
+    return {"response": response_text}
+
