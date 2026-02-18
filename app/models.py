@@ -42,3 +42,20 @@ class AssessmentResult(Base):
     stream_cons = Column(JSON, nullable=True) # List of strings
     
     user = relationship("User", back_populates="assessment")
+
+from sqlalchemy import DateTime
+from sqlalchemy.sql import func
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    sender = Column(String) # "user" or "ai"
+    content = Column(Text)
+    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", back_populates="messages")
+
+# Update User model to include messages relationship
+User.messages = relationship("ChatMessage", back_populates="user", order_by="ChatMessage.timestamp")

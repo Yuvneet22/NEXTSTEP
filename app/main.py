@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, status, Request, Form, Response
 from pydantic import BaseModel
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
@@ -860,7 +860,15 @@ async def chatbot_page(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
     if not user:
         return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
-    return templates.TemplateResponse("chatbot.html", {"request": request, "user": user})
+    
+    # Fetch History
+    history = db.query(models.ChatMessage).filter(models.ChatMessage.user_id == user.id).order_by(models.ChatMessage.timestamp).all()
+    
+    return templates.TemplateResponse("chatbot.html", {"request": request, "user": user, "history": history})
+
+from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
+
+# ... (Previous imports remain, ensure StreamingResponse is available)
 
 @app.post("/chatbot/message")
 async def chatbot_message(request: Request, chat_req: ChatRequest, db: Session = Depends(get_db)):
@@ -869,6 +877,11 @@ async def chatbot_message(request: Request, chat_req: ChatRequest, db: Session =
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     user_message = chat_req.message
+    
+    # Save User Message
+    user_msg_db = models.ChatMessage(user_id=user.id, sender="user", content=user_message)
+    db.add(user_msg_db)
+    db.commit()
     
     # 1. Build Context from DB
     result = db.query(models.AssessmentResult).filter(models.AssessmentResult.user_id == user.id).first()
@@ -886,12 +899,20 @@ async def chatbot_message(request: Request, chat_req: ChatRequest, db: Session =
         if result.phase3_analysis:
              context_str += f"Work Style Analysis: {result.phase3_analysis[:200]}...\n"
 
+    # Fetch recent history for context
+    recent_history = db.query(models.ChatMessage).filter(models.ChatMessage.user_id == user.id).order_by(models.ChatMessage.timestamp.desc()).limit(10).all()
+    recent_history.reverse() # Oldest first
+    history_str = "\n".join([f"{msg.sender.upper()}: {msg.content}" for msg in recent_history])
+
     # 2. Construct System Prompt
     prompt = f"""
     You are 'NextStep AI', an expert career counselor and student mentor.
     
     USER CONTEXT:
     {context_str}
+
+    CONVERSATION HISTORY:
+    {history_str}
 
     YOUR GOAL:
     Help the student with their career questions.
@@ -900,35 +921,46 @@ async def chatbot_message(request: Request, chat_req: ChatRequest, db: Session =
     - Be encouraging, positive, and realistic.
     - Keep answers concise (under 200 words) unless asked for deep detail.
     - Use Markdown for bolding key terms or lists.
+    - Reply to the latest STUDENT MESSAGE.
 
     STUDENT MESSAGE:
     {user_message}
     """
     
-    # 3. Call Gemini
-    response_text = ""
-    try:
-        if GEMINI_API_KEY:
-            # We use the same helper function but it tries to parse JSON usually.
-            # However, our helper 'generate_content_with_fallback' returns *string* if JSON fails,
-            # but it *tries* to extract JSON. 
-            # We want raw text here.
-            # Let's direct call the model or use a cleaner prompt that doesn't look like JSON to the parser.
-            # Actually, let's just use the helper but be aware it might strip things if it looks like JSON.
-            # To be safe, let's just call genai directly if available to avoid the JSON-stripping logic of the helper?
-            # Or just use the helper, it returns text if it can't find JSON.
+    # 3. Stream Gemini Response
+    async def generate():
+        full_response_text = ""
+        try:
+            if GEMINI_API_KEY:
+                model = genai.GenerativeModel("gemini-flash-latest")
+                response = model.generate_content(prompt, stream=True)
+                for chunk in response:
+                    if chunk.text:
+                        text_chunk = chunk.text
+                        full_response_text += text_chunk
+                        yield text_chunk
+            else:
+                 # Demo Mode Simulation
+                 fake_response = "I'm in demo mode (No API Key). Based on your profile, I'd suggest exploring based on your interests! (Please set GEMINI_API_KEY to get real AI responses)"
+                 for word in fake_response.split():
+                     text_chunk = word + " "
+                     full_response_text += text_chunk
+                     yield text_chunk
+                     import time
+                     time.sleep(0.05) # Fake delay
             
-            # The helper 'generate_content_with_fallback' has specific JSON extraction logic that might be aggressive.
-            # Let's just use a direct call for chat to be safe and raw.
-            
-            model = genai.GenerativeModel("gemini-flash-latest")
-            resp = model.generate_content(prompt)
-            response_text = resp.text
-        else:
-             response_text = "I'm in demo mode (No API Key). Based on your profile, I'd suggest exploring based on your interests! (Please set GEMINI_API_KEY to get real AI responses)"
-    except Exception as e:
-        print(f"Chat Error: {e}")
-        response_text = "I'm having a little trouble thinking right now. Could you ask that again?"
+            # Save AI Message
+            ai_msg_db = models.ChatMessage(user_id=user.id, sender="ai", content=full_response_text)
+            db.add(ai_msg_db)
+            db.commit()
 
-    return {"response": response_text}
+        except Exception as e:
+            print(f"Chat Error: {e}")
+            error_msg = f"I'm having a little trouble thinking right now. (Error: {str(e)})"
+            yield error_msg
+            ai_msg_db = models.ChatMessage(user_id=user.id, sender="ai", content=error_msg)
+            db.add(ai_msg_db)
+            db.commit()
+
+    return StreamingResponse(generate(), media_type="text/plain")
 

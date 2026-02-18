@@ -34,16 +34,56 @@
                 </div>
             </div>
 
+            <!-- History Messages -->
+            {% for msg in history %}
+            <div class="flex items-start gap-4 {% if msg.sender == 'user' %}flex-row-reverse{% endif %}">
+                {% if msg.sender == 'user' %}
+                <div
+                    class="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0 border border-slate-300">
+                    <span class="text-lg">👤</span>
+                </div>
+                <div class="bg-indigo-600 text-white rounded-2xl rounded-tr-none shadow-md p-4 max-w-[80%]">
+                    <div class="prose prose-invert max-w-none text-sm history-content" data-raw="{{ msg.content }}">
+                        {{ msg.content }}
+                    </div>
+                </div>
+                {% else %}
+                <div
+                    class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0 border border-indigo-200">
+                    <span class="text-xl">🤖</span>
+                </div>
+                <div
+                    class="bg-white text-slate-700 rounded-2xl rounded-tl-none shadow-sm border border-slate-200 p-4 max-w-[80%]">
+                    <div class="prose prose-indigo max-w-none text-sm history-content" data-raw="{{ msg.content }}">
+                        {{ msg.content }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+
             <!-- Dynamic Messages will appear here -->
         </div>
 
         <!-- Input Area -->
         <div class="bg-white p-4 border-t border-slate-200">
-            <form id="chat-form" class="flex gap-4">
+            <form id="chat-form" class="flex gap-4 items-center">
                 <input type="text" id="user-input"
                     class="flex-grow px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                     placeholder="Type your question here (e.g., 'What careers suit a Creative Specialist?')..." required
                     autocomplete="off">
+
+                <!-- Voice Input Button -->
+                <button type="button" id="voice-btn"
+                    class="p-3 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    title="Speak">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                    </svg>
+                </button>
+
                 <button type="submit" id="send-btn"
                     class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold transition-colors shadow-md flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                     <span>Send</span>
@@ -65,6 +105,52 @@
     const chatForm = document.getElementById('chat-form');
     const userInput = document.getElementById('user-input');
     const sendBtn = document.getElementById('send-btn');
+    const voiceBtn = document.getElementById('voice-btn');
+
+    // --- Voice Input Logic ---
+    let recognition;
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.continuous = false; // Stop after one sentence
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+
+        recognition.onstart = function () {
+            voiceBtn.classList.remove('bg-slate-100', 'text-slate-600');
+            voiceBtn.classList.add('bg-red-100', 'text-red-600', 'animate-pulse');
+        };
+
+        recognition.onend = function () {
+            voiceBtn.classList.remove('bg-red-100', 'text-red-600', 'animate-pulse');
+            voiceBtn.classList.add('bg-slate-100', 'text-slate-600');
+        };
+
+        recognition.onresult = function (event) {
+            const transcript = event.results[0][0].transcript;
+            userInput.value += (userInput.value ? ' ' : '') + transcript;
+            userInput.focus();
+        };
+
+        recognition.onerror = function (event) {
+            console.error('Speech recognition error', event.error);
+            voiceBtn.classList.remove('bg-red-100', 'text-red-600', 'animate-pulse');
+            voiceBtn.classList.add('bg-slate-100', 'text-slate-600');
+            // Optional: Show a small toast or alert
+        };
+
+        voiceBtn.addEventListener('click', () => {
+            if (voiceBtn.classList.contains('text-red-600')) {
+                recognition.stop();
+            } else {
+                recognition.start();
+            }
+        });
+    } else {
+        voiceBtn.style.display = 'none'; // Hide if not supported
+        console.warn('Speech Recognition API not supported in this browser.');
+    }
+    // --- End Voice Input Logic ---
 
     function appendMessage(text, isUser = false) {
         const div = document.createElement('div');
@@ -133,8 +219,26 @@
         userInput.disabled = true;
         sendBtn.disabled = true;
 
-        // 2. Show Typing Indicator
-        showTypingIndicator();
+        // 2. Prepare AI Response Bubble (Empty initially)
+        // We manually create the AI bubble here so we can stream into it
+        const div = document.createElement('div');
+        div.className = 'flex items-start gap-4';
+        div.innerHTML = `
+            <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0 border border-indigo-200">
+                <span class="text-xl">🤖</span>
+            </div>
+            <div class="bg-white text-slate-700 rounded-2xl rounded-tl-none shadow-sm border border-slate-200 p-4 max-w-[80%]">
+                <div id="ai-response-content" class="prose prose-indigo max-w-none text-sm">
+                   <!-- Streaming content goes here -->
+                   <span class="animate-pulse">Thinking...</span>
+                </div>
+            </div>
+        `;
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        const contentDiv = div.querySelector('#ai-response-content');
+        let fullText = "";
 
         try {
             // 3. Call API
@@ -148,24 +252,57 @@
 
             if (!response.ok) throw new Error('Network response was not ok');
 
-            const data = await response.json();
+            // 4. Handle Stream
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
 
-            // 4. Show AI Response
-            removeTypingIndicator();
-            appendMessage(data.response);
+            // Remove "Thinking..." placeholder
+            contentDiv.innerHTML = "";
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                fullText += chunk;
+
+                // Update content with partial markdown rendering
+                // Note: Frequent re-rendering can be heavy but usually fine for text chats
+                contentDiv.innerHTML = marked.parse(fullText);
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
 
         } catch (error) {
-            removeTypingIndicator();
-            appendMessage("Sorry, I'm having trouble connecting to the server. Please try again later.", false);
+            contentDiv.innerHTML = `<p class="text-red-500">Sorry, I'm having trouble connecting to the server. Please try again later.</p>`;
             console.error('Error:', error);
         } finally {
             userInput.disabled = false;
             sendBtn.disabled = false;
             userInput.focus();
+            // Ensure final render is complete
+            contentDiv.innerHTML = marked.parse(fullText);
         }
     });
 </script>
 
 <!-- Load Marked.js for Markdown rendering -->
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+<script>
+    // Render Markdown for History Messages
+    document.addEventListener('DOMContentLoaded', () => {
+        const historyElements = document.querySelectorAll('.history-content');
+        historyElements.forEach(el => {
+            // Use textContent as source if data-raw is problematic with quotes, 
+            // but Jinja might escape textContent nicely. 
+            // Better: Use the text inside the div as source.
+            const rawText = el.textContent.trim();
+            el.innerHTML = marked.parse(rawText);
+        });
+
+        // Scroll to bottom
+        const chatBox = document.getElementById('chat-box');
+        chatBox.scrollTop = chatBox.scrollHeight;
+    });
+</script>
 {% endblock %}
