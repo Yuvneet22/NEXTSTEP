@@ -12,47 +12,56 @@ A comprehensive AI-powered assessment and learning platform built with FastAPI. 
 - **Assessment Management**: Create, manage, and grade assessments
 - **Result Tracking**: Detailed result analysis and reporting
 - **FastAPI Backend**: Modern, fast API framework with automatic documentation
-##  System Architecture  
+  
+## System Architecture 
 
+![Student-Centric Async API](https://github.com/Yuvneet22/NEXTSTEP/blob/main/Student-Centric%20Async%20API-2026-02-18-131456.png)
 
 ## Project Structure
 
 ```
 NEXTSTEP/
-├── app/                          # Main application package
+├── README.md
+├── app/
 │   ├── __init__.py
-│   ├── main.py                  # Flask app initialization
-│   ├── models.py                # Database models
-│   ├── database.py              # Database configuration
-│   ├── static/                  # Static files
-│   │   └── images/
-│   │       └── assessment/
-│   └── templates/               # HTML templates
-│       ├── base.html
-│       ├── login.html
-│       ├── signup.html
-│       ├── dashboard.html
+│   ├── database.py              # DB Connection & Session
+│   ├── main.py                  # FastAPI Application Entry & Routes
+│   ├── models.py                # Database Models (User, Assessment, ChatMessage)
+│   ├── static/
+│   │   └── images/              # Assessment visual assets
+│   └── templates/               # Jinja2 HTML Templates
 │       ├── admin_dashboard.html
 │       ├── assessment.html
-│       ├── assessment_phase3.html
 │       ├── assessment_final.html
-│       └── result.html
-├── data/                        # Data files
+│       ├── assessment_phase3.html
+│       ├── base.html            # Base layout with Nav & Footer
+│       ├── chatbot.html         # Chat interface (Streaming + Voice)
+│       ├── dashboard.html
+│       ├── login.html
+│       ├── result.html
+│       └── signup.html
+├── assets/
+│   └── system_architecture.png
+├── data/                        # Question banks for all phases
 │   ├── __init__.py
-│   ├── questions_data.py        # Question data
-│   ├── questions_phase3.py
-│   └── questions_final.py
-├── scripts/                     # Utility scripts
-│   ├── list_users.py
-│   ├── manage_test_data.py
-│   ├── migrate_db_v2.py
-│   ├── migrate_db_v5.py
-│   ├── rename_images.py
-│   └── verify_classification.py
-├── requirements.txt             # Python dependencies
-├── run.py                       # Application entry point
-└── README.md                    # This file
+│   ├── questions_12th.py
+│   ├── questions_above_12th.py
+│   ├── questions_data.py
+│   ├── questions_final.py
+│   └── questions_phase3.py
+├── learnloop.db                 # SQLite Database
+├── package.json
+├── requirements.txt             # Python Dependencies
+├── run.py                       # Server runner (Uvicorn)
+└── scripts/                     # Utility & Migration scripts
+    ├── list_users.py
+    ├── manage_test_data.py
+    ├── migrate_db_v2.py
+    ├── migrate_db_v5.py
+    ├── rename_images.py
+    └── verify_classification.py
 ```
+
 
 
 
