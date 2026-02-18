@@ -14,7 +14,6 @@ A comprehensive AI-powered assessment and learning platform built with FastAPI. 
 - **FastAPI Backend**: Modern, fast API framework with automatic documentation
 ##  System Architecture  
 
-![Next Step Assessment Flow](https://github.com/Yuvneet22/NEXTSTEP/blob/main/assets/system_architecture.png)
 
 ## Project Structure
 
