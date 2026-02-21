@@ -46,6 +46,7 @@ class AssessmentResult(Base):
 from sqlalchemy import DateTime
 from sqlalchemy.sql import func
 
+
 class ChatMessage(Base):
     __tablename__ = "chat_messages"
 
@@ -57,5 +58,18 @@ class ChatMessage(Base):
 
     user = relationship("User", back_populates="messages")
 
-# Update User model to include messages relationship
+class Feedback(Base):
+    __tablename__ = "feedbacks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    content = Column(Text)
+    rating = Column(Integer)
+    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", back_populates="feedbacks")
+
+# Update User model to include messages and feedback relationships
 User.messages = relationship("ChatMessage", back_populates="user", order_by="ChatMessage.timestamp")
+User.feedbacks = relationship("Feedback", back_populates="user", order_by="Feedback.timestamp")
+
