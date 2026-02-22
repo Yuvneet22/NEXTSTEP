@@ -1,11 +1,10 @@
+<div align="center">
 
+## ✨ NextStep
 
+<img src="https://github.com/Yuvneet22/NEXTSTEP/blob/main/nextstep_no_bg.png" width="520"/>
 
-<p align="center">
-  <img src="Screenshot 2026-02-22 at 10.31.30 PM.png" alt="NEXTSTEP Logo" width="200"/>
-</p>
-
-# NEXTSTEP
+</div>
 
 An AI-powered career assessment and guidance platform built with FastAPI. Designed for students (Class 10th, 12th, and Above) to discover their personality archetype, explore career streams, and get personalized guidance through a multi-phase assessment and an AI chatbot.
 
