@@ -452,14 +452,18 @@ async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
     if not user:
          return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
 
-    # 2. Fetch all users with their assessment results
-    # Using 'joinedload' strategy via relationship is best, but since relationship is defined, standard query works.
-    # However, to avoid N+1 problem, ideally we'd eager load, but for MVP separate queries or relationship loading is fine.
-    # SQLAlchemy default lazy loading will work as we iterate in template.
+    # 2. Fetch all users
     all_users = db.query(models.User).all()
+
+    # 3. Fetch all feedback
+    all_feedback = db.query(models.Feedback).order_by(models.Feedback.timestamp.desc()).all()
     
-    
-    return templates.TemplateResponse("admin_dashboard.html", {"request": request, "user": user, "users": all_users})
+    return templates.TemplateResponse("admin_dashboard.html", {
+        "request": request, 
+        "user": user, 
+        "users": all_users,
+        "feedbacks": all_feedback
+    })
 
 @app.post("/admin/users/{user_id}/delete")
 async def delete_user(user_id: int, request: Request, db: Session = Depends(get_db)):
@@ -963,4 +967,35 @@ async def chatbot_message(request: Request, chat_req: ChatRequest, db: Session =
             db.commit()
 
     return StreamingResponse(generate(), media_type="text/plain")
+
+
+# --- Feedback Routes ---
+
+@app.get("/feedback", response_class=HTMLResponse)
+async def feedback_page(request: Request, db: Session = Depends(get_db)):
+    user = get_current_user(request, db)
+    if not user:
+        return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+    return templates.TemplateResponse("feedback.html", {"request": request, "user": user})
+
+@app.post("/feedback")
+async def submit_feedback(
+    request: Request,
+    content: str = Form(...),
+    rating: int = Form(...),
+    db: Session = Depends(get_db)
+):
+    user = get_current_user(request, db)
+    if not user:
+        return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+    
+    new_feedback = models.Feedback(
+        user_id=user.id,
+        content=content,
+        rating=rating
+    )
+    db.add(new_feedback)
+    db.commit()
+    
+    return RedirectResponse(url="/dashboard", status_code=status.HTTP_302_FOUND)
 
