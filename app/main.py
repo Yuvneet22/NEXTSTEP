@@ -82,6 +82,14 @@ from data.questions_above_12th import questions_above_12th
 
 app = FastAPI(title="NextStep")
 
+@app.exception_handler(Exception)
+async def debug_exception_handler(request: Request, exc: Exception):
+    import traceback
+    return HTMLResponse(
+        content=f"<h1>Debug Error</h1><pre>{traceback.format_exc()}</pre>",
+        status_code=500
+    )
+
 # Mount Static & Templates
 # Mount Static & Templates
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
