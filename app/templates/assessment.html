@@ -84,10 +84,17 @@
                     <h3 class="text-2xl font-bold text-slate-900 mb-3">Assessment Complete!</h3>
                     <p class="text-slate-500 mb-8 max-w-md mx-auto">Great job! We've analyzed your responses. Click
                         below to reveal your personality archetype.</p>
-                    <button type="submit"
-                        class="w-full sm:w-auto py-4 px-10 rounded-2xl shadow-xl shadow-violet-200 text-lg font-bold text-white bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 transition transform hover:scale-105 ring-offset-2 focus:ring-2 focus:ring-violet-500">
-                        Reveal My Profile
+                    <button type="submit" id="reveal-btn"
+                        class="w-full sm:w-auto py-4 px-10 rounded-2xl shadow-xl shadow-violet-200 text-lg font-bold text-white bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 transition transform hover:scale-105 ring-offset-2 focus:ring-2 focus:ring-violet-500 flex items-center justify-center mx-auto min-w-[240px]">
+                        <span id="btn-text">Reveal My Profile</span>
+                        <div id="btn-spinner" class="hidden ml-3">
+                            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </div>
                     </button>
+                    <p id="analyzing-text" class="hidden mt-4 text-violet-600 font-bold animate-pulse">Deep AI Analysis in progress... Please wait.</p>
                 </div>
             </form>
         </div>
@@ -150,6 +157,20 @@
     // Initialize the first step
     document.addEventListener('DOMContentLoaded', () => {
         showStep(currentStep);
+
+        const form = document.getElementById('assessment-form');
+        form.addEventListener('submit', () => {
+             const btn = document.getElementById('reveal-btn');
+             const btnText = document.getElementById('btn-text');
+             const spinner = document.getElementById('btn-spinner');
+             const analyzingText = document.getElementById('analyzing-text');
+
+             btn.disabled = true;
+             btn.classList.add('opacity-75', 'cursor-not-allowed');
+             btnText.innerText = 'Analyzing Profile...';
+             spinner.classList.remove('hidden');
+             analyzingText.classList.remove('hidden');
+        });
     });
 </script>
 {% endblock %}
