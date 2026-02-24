@@ -8,3 +8,4 @@ python-jose[cryptography]
 google-generativeai
 python-dotenv
 groq
+psycopg2-binary
