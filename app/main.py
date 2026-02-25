@@ -498,7 +498,9 @@ async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
     if not user:
          return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
     
-    if user.role != "admin":
+    # Safety Check: Allow access if user email matches ADMIN_EMAIL env var
+    admin_email = os.getenv("ADMIN_EMAIL")
+    if user.role != "admin" and (not admin_email or user.email != admin_email):
         return RedirectResponse(url="/dashboard", status_code=status.HTTP_302_FOUND)
 
     # 2. Fetch all users
