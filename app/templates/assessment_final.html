@@ -4,168 +4,204 @@
 
 {% block content %}
 <div class="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
-        <div class="px-4 py-5 sm:px-6 bg-purple-50">
-            <h3 class="text-lg leading-6 font-medium text-purple-900">Phase 4: Final Stream Recommendation</h3>
-            <p class="mt-1 max-w-2xl text-sm text-purple-600">
-                This comprehensive 10-question assessment will analyze your aptitude, interests, and personality to
-                recommend the optimal academic stream for you.
-            </p>
+    <div class="bg-white shadow-xl rounded-2xl overflow-hidden border border-slate-100">
+        <!-- Progress Bar -->
+        <div class="w-full bg-slate-100 h-2.5">
+            <div id="progress-bar"
+                class="bg-gradient-to-r from-violet-500 to-indigo-600 h-2.5 transition-all duration-500 ease-out"
+                style="width: 0%"></div>
         </div>
-        <div class="border-t border-gray-200 px-4 py-5 sm:p-6">
-            <form action="/assessment/final/submit" method="POST" class="space-y-12">
+
+        <!-- Header -->
+        <div class="px-6 py-6 sm:px-8 flex justify-between items-center bg-slate-50 border-b border-slate-100">
+            <div>
+                <h3 class="text-xl leading-6 font-bold text-slate-800">Phase 4: Final Stream Recommendation</h3>
+                <p class="mt-1 max-w-2xl text-sm text-slate-500 font-medium">Question <span id="current-step-text"
+                        class="text-violet-600 font-bold">1</span> of <span id="total-steps-text">10</span></p>
+            </div>
+            <button type="button" onclick="speakCurrentQuestion()"
+                class="p-3 rounded-full bg-white text-violet-600 shadow-sm border border-slate-200 hover:bg-violet-50 hover:text-violet-700 transition-all transform hover:scale-105"
+                title="Read Aloud">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="px-6 py-8 sm:p-10">
+            <form id="assessment-form" action="/assessment/final/submit" method="POST">
+                <input type="hidden" name="mode" value="{{ mode }}">
 
                 {% if mode == '10th' %}
-                <!-- Class 10th Sections (Existing) -->
-                <!-- Section A -->
-                <div class="bg-gray-50 p-6 rounded-lg mb-8">
-                    <h4 class="text-xl font-bold text-gray-900 mb-4">{{ sections.section_a.title }}</h4>
-                    {% for q in sections.section_a.questions %}
-                    <div class="mb-8 last:mb-0">
-                        <p class="text-md font-medium text-gray-900 mb-3">{{ loop.index }}. {{ q.question }}</p>
-                        <div class="space-y-2">
-                            {% for opt in q.options %}
-                            <label class="flex items-start">
-                                <input type="radio" name="{{ q.id }}" value="{{ opt.value }}" required
-                                    class="mt-1 mr-3 h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300">
-                                <span class="text-sm text-gray-700">{{ opt.text }}</span>
-                            </label>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
+                    <!-- Class 10th: Stepper questions -->
+                    {% set ns = namespace(counter=0) %}
+                    {% for section_id, section in sections.items() %}
+                        {% for q in section.questions %}
+                        <div class="question-step hidden space-y-6" data-step="{{ ns.counter }}">
+                            <div class="mb-4">
+                                <span class="inline-block px-3 py-1 text-xs font-semibold tracking-wide uppercase text-violet-600 bg-violet-100 rounded-full mb-3">{{ section.title }}</span>
+                                <h4 class="text-2xl font-extrabold text-slate-800 mb-2 question-title">{{ q.question }}</h4>
+                            </div>
 
-                <!-- Section B -->
-                <div class="bg-blue-50 p-6 rounded-lg mb-8">
-                    <h4 class="text-xl font-bold text-gray-900 mb-4">{{ sections.section_b.title }}</h4>
-                    {% for q in sections.section_b.questions %}
-                    <div class="mb-8 last:mb-0">
-                        <p class="text-md font-medium text-gray-900 mb-3">{{ loop.index }}. {{ q.question }}</p>
-                        <div class="space-y-2">
-                            {% for opt in q.options %}
-                            <label class="flex items-start">
-                                <input type="radio" name="{{ q.id }}" value="{{ opt.value }}" required
-                                    class="mt-1 mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300">
-                                <span class="text-sm text-gray-700">{{ opt.text }}</span>
-                            </label>
-                            {% endfor %}
+                            <div class="space-y-3">
+                                {% for opt in q.options %}
+                                <label class="relative flex items-center p-4 rounded-xl border-2 border-slate-200 cursor-pointer hover:border-violet-300 hover:bg-violet-50/30 transition-all duration-200 group">
+                                    <input type="radio" name="{{ q.id }}" value="{{ opt.value }}" required
+                                        onchange="handleSelection(this)" class="h-5 w-5 text-violet-600 focus:ring-violet-500 border-slate-300">
+                                    <span class="ml-4 text-slate-700 font-medium group-hover:text-slate-900 transition-colors">{{ opt.text }}</span>
+                                </label>
+                                {% endfor %}
+                            </div>
                         </div>
-                    </div>
+                        {% set ns.counter = ns.counter + 1 %}
+                        {% endfor %}
                     {% endfor %}
-                </div>
-
-                <!-- Section C -->
-                <div class="bg-green-50 p-6 rounded-lg mb-8">
-                    <h4 class="text-xl font-bold text-gray-900 mb-4">{{ sections.section_c.title }}</h4>
-                    {% for q in sections.section_c.questions %}
-                    <div class="mb-8 last:mb-0">
-                        <p class="text-md font-medium text-gray-900 mb-3">{{ loop.index }}. {{ q.question }}</p>
-                        <div class="space-y-2">
-                            {% for opt in q.options %}
-                            <label class="flex items-start">
-                                <input type="radio" name="{{ q.id }}" value="{{ opt.value }}" required
-                                    class="mt-1 mr-3 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300">
-                                <span class="text-sm text-gray-700">{{ opt.text }}</span>
-                            </label>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-
-                <!-- Section D -->
-                <div class="bg-orange-50 p-6 rounded-lg mb-8">
-                    <h4 class="text-xl font-bold text-gray-900 mb-4">{{ sections.section_d.title }}</h4>
-                    {% for q in sections.section_d.questions %}
-                    <div class="mb-8 last:mb-0">
-                        <p class="text-md font-medium text-gray-900 mb-3">{{ loop.index }}. {{ q.question }}</p>
-                        <div class="space-y-2">
-                            {% for opt in q.options %}
-                            <label class="flex items-start">
-                                <input type="radio" name="{{ q.id }}" value="{{ opt.value }}" required
-                                    class="mt-1 mr-3 h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300">
-                                <span class="text-sm text-gray-700">{{ opt.text }}</span>
-                            </label>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-
                 {% else %}
-                <!-- Class 12th & Above Sections (New) -->
-                <div class="bg-indigo-50 p-6 rounded-lg mb-8">
-                    <h4 class="text-xl font-bold text-indigo-900 mb-4">
-                        {% if mode == '12th' %}Scenario Analysis{% else %}Interest & Ambition Profile{% endif %}
-                    </h4>
-
+                    <!-- Class 12th & Above: Stepper questions with TextArea -->
                     {% for q in questions %}
-                    <div class="mb-10 last:mb-0">
-                        <div class="mb-3">
-                            <span
-                                class="inline-block px-2 py-1 text-xs font-semibold tracking-wide uppercase text-indigo-600 bg-indigo-200 rounded-full mb-2">Scenario
-                                {{ loop.index }}</span>
-                            <h5 class="text-lg font-bold text-gray-900">{{ q.title }}</h5>
+                    <div class="question-step hidden space-y-6" data-step="{{ loop.index0 }}">
+                        <div class="mb-4">
+                            <span class="inline-block px-3 py-1 text-xs font-semibold tracking-wide uppercase text-indigo-600 bg-indigo-100 rounded-full mb-3">Scenario {{ loop.index }}</span>
+                            <h4 class="text-2xl font-extrabold text-slate-800 mb-2 question-title">{{ q.title }}</h4>
                         </div>
-                        <p class="text-gray-700 mb-4 italic">"{{ q.text }}"</p>
+                        <p class="text-slate-600 text-lg italic bg-slate-50 p-4 rounded-xl border border-slate-100 mb-6">"{{ q.text }}"</p>
 
                         <div class="relative">
-                            <label for="{{ q.id }}" class="block text-sm font-medium text-gray-700 mb-1">Your Response
-                                (Type or Speak)</label>
-                            <div class="flex gap-2">
-                                <textarea id="{{ q.id }}" name="{{ q.id }}" rows="3" required
-                                    class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md p-2"
+                            <label for="{{ q.id }}" class="block text-sm font-medium text-slate-500 mb-2 uppercase tracking-wider">Your Response (Type or Speak)</label>
+                            <div class="flex gap-3">
+                                <textarea id="{{ q.id }}" name="{{ q.id }}" rows="4" required
+                                    class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-lg border-slate-300 rounded-xl p-4 transition-all"
                                     placeholder="I would..."></textarea>
                                 <button type="button" onclick="toggleSpeech('{{ q.id }}')"
-                                    class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                                    class="inline-flex items-center px-4 py-2 border border-slate-200 shadow-sm text-2xl rounded-xl text-slate-700 bg-white hover:bg-indigo-50 hover:text-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
                                     id="btn-{{ q.id }}" title="Record Audio">
                                     🎤
                                 </button>
                             </div>
-                            <p id="status-{{ q.id }}" class="text-xs text-indigo-600 mt-1 hidden">Listening...</p>
+                            <p id="status-{{ q.id }}" class="text-sm font-bold text-indigo-600 mt-2 hidden animate-pulse flex items-center gap-2">
+                                <span class="h-2 w-2 bg-indigo-600 rounded-full"></span> Listening...
+                            </p>
+                        </div>
+
+                        <div class="pt-6 flex justify-between">
+                            <button type="button" onclick="prevStep()" class="px-6 py-3 text-slate-500 font-bold hover:text-slate-800 transition-colors">Previous</button>
+                            <button type="button" onclick="nextStep()" class="px-8 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100">Next Question</button>
                         </div>
                     </div>
                     {% endfor %}
-
-                    <input type="hidden" name="mode" value="{{ mode }}">
-                </div>
                 {% endif %}
 
-                <div class="pt-5 flex flex-col items-center">
+                <!-- Submit Section -->
+                <div id="submit-section" class="hidden text-center pt-10 space-y-8 animate-in fade-in zoom-in duration-500">
+                    <div class="flex flex-col items-center">
+                        <div class="h-24 w-24 rounded-full bg-green-100 flex items-center justify-center mb-6">
+                            <svg class="h-12 w-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-3xl font-extrabold text-slate-900 mb-2">Assessment Complete!</h3>
+                        <p class="text-slate-500 text-lg max-w-md mx-auto">Click below to generate your personalized AI career insights and stream recommendations.</p>
+                    </div>
+
                     <button type="submit" id="submit-btn"
-                        class="w-full flex justify-center py-4 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition duration-150 ease-in-out items-center">
-                        <span id="btn-text">Get Recommendations</span>
+                        class="w-full py-4 px-8 border border-transparent rounded-2xl shadow-xl text-xl font-bold text-white bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 transition-all duration-300 transform hover:scale-[1.02] flex items-center justify-center">
+                        <span id="btn-text">Get My Career Path</span>
                         <div id="btn-spinner" class="hidden ml-3">
-                            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <svg class="animate-spin h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
                         </div>
                     </button>
-                    <p id="loading-text" class="hidden mt-4 text-purple-600 font-bold animate-pulse text-center">AI is analyzing your profile to generate professional recommendations... This may take 10 seconds.</p>
+                    <p id="loading-text" class="hidden mt-6 text-violet-600 font-bold animate-pulse text-lg">
+                        AI is analyzing your profile to generate professional recommendations... This may take 10 seconds.
+                    </p>
                 </div>
-
-                <script>
-                    document.querySelector('form').addEventListener('submit', function() {
-                        const btn = document.getElementById('submit-btn');
-                        const btnText = document.getElementById('btn-text');
-                        const spinner = document.getElementById('btn-spinner');
-                        const loadingText = document.getElementById('loading-text');
-
-                        btn.disabled = true;
-                        btn.classList.add('opacity-75', 'cursor-not-allowed');
-                        btnText.innerText = 'Analyzing Results...';
-                        spinner.classList.remove('hidden');
-                        loadingText.classList.remove('hidden');
-                    });
-                </script>
             </form>
         </div>
     </div>
 </div>
 
 <script>
+    let currentStep = 0;
+    const steps = document.querySelectorAll('.question-step');
+    const totalSteps = steps.length;
+    const progressBar = document.getElementById('progress-bar');
+    const currentStepText = document.getElementById('current-step-text');
+    const totalStepsText = document.getElementById('total-steps-text');
+
+    function updateProgress() {
+        const percentage = (currentStep / totalSteps) * 100;
+        progressBar.style.width = percentage + '%';
+        
+        if (currentStep < totalSteps) {
+            currentStepText.innerText = currentStep + 1;
+            totalStepsText.innerText = totalSteps;
+        }
+    }
+
+    function showStep(index) {
+        steps.forEach(step => step.classList.add('hidden'));
+
+        if (index >= totalSteps) {
+            document.getElementById('submit-section').classList.remove('hidden');
+            progressBar.style.width = '100%';
+            currentStepText.parentElement.innerText = "Completed";
+            return;
+        }
+
+        steps[index].classList.remove('hidden');
+        currentStep = index;
+        updateProgress();
+        
+        // Cancel any previous speech when moving to new question
+        window.speechSynthesis.cancel();
+    }
+
+    function handleSelection(input) {
+        setTimeout(() => {
+            nextStep();
+        }, 400);
+    }
+
+    function nextStep() {
+        // Basic validation for textareas
+        const currentStepEl = steps[currentStep];
+        const textarea = currentStepEl.querySelector('textarea');
+        if (textarea && !textarea.value.trim()) {
+            textarea.classList.add('border-red-500', 'shake');
+            setTimeout(() => textarea.classList.remove('shake'), 500);
+            return;
+        }
+
+        showStep(currentStep + 1);
+    }
+
+    function prevStep() {
+        if (currentStep > 0) {
+            showStep(currentStep - 1);
+        }
+    }
+
+    function speakCurrentQuestion() {
+        window.speechSynthesis.cancel();
+        const currentQuestion = steps[currentStep]?.querySelector('.question-title')?.innerText;
+        const currentText = steps[currentStep]?.querySelector('p.italic')?.innerText;
+        
+        if (currentQuestion) {
+            let textToSpeak = currentQuestion;
+            if (currentText) textToSpeak += ". . . " + currentText;
+            
+            const utterance = new SpeechSynthesisUtterance(textToSpeak);
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+            window.speechSynthesis.speak(utterance);
+        }
+    }
+
+    // Speech Recognition (STT) for 12th/Above
     function toggleSpeech(questionId) {
         if (!('webkitSpeechRecognition' in window)) {
             alert("Speech recognition is not supported in this browser. Please use Chrome.");
@@ -177,16 +213,12 @@
         const textarea = document.getElementById(questionId);
 
         if (btn.classList.contains('listening')) {
-            // Stop listening
-            if (window.recognition) {
-                window.recognition.stop();
-            }
+            if (window.recognition) window.recognition.stop();
             return;
         }
 
         const recognition = new webkitSpeechRecognition();
         window.recognition = recognition;
-
         recognition.continuous = false;
         recognition.interimResults = false;
         recognition.lang = 'en-US';
@@ -194,40 +226,60 @@
         recognition.onstart = function () {
             btn.classList.add('listening');
             btn.classList.remove('bg-white');
-            btn.classList.add('bg-red-100', 'text-red-600', 'border-red-300');
-            btn.innerHTML = '⏹️'; // Stop icon
+            btn.classList.add('bg-red-50', 'text-red-600', 'border-red-200');
+            btn.innerHTML = '⏹️';
             status.classList.remove('hidden');
         };
 
         recognition.onresult = function (event) {
             const transcript = event.results[0][0].transcript;
-
-            // Append or set text
-            const currentText = textarea.value;
-            textarea.value = currentText ? currentText + " " + transcript : transcript;
+            textarea.value = (textarea.value ? textarea.value + " " : "") + transcript;
         };
 
-        recognition.onerror = function (event) {
-            console.error("Speech error", event);
-            resetUI(questionId);
-        };
-
-        recognition.onend = function () {
-            resetUI(questionId);
-        };
-
+        recognition.onerror = () => resetUI(questionId);
+        recognition.onend = () => resetUI(questionId);
         recognition.start();
     }
 
     function resetUI(questionId) {
         const btn = document.getElementById(`btn-${questionId}`);
         const status = document.getElementById(`status-${questionId}`);
-
-        btn.classList.remove('listening');
-        btn.classList.remove('bg-red-100', 'text-red-600', 'border-red-300');
+        btn.classList.remove('listening', 'bg-red-50', 'text-red-600', 'border-red-200');
         btn.classList.add('bg-white');
         btn.innerHTML = '🎤';
         status.classList.add('hidden');
     }
+
+    // Form submission UI
+    document.getElementById('assessment-form').addEventListener('submit', function() {
+        const btn = document.getElementById('submit-btn');
+        const btnText = document.getElementById('btn-text');
+        const spinner = document.getElementById('btn-spinner');
+        const loadingText = document.getElementById('loading-text');
+
+        btn.disabled = true;
+        btn.classList.add('opacity-75', 'cursor-not-allowed');
+        btnText.innerText = 'Analyzing Results...';
+        spinner.classList.remove('hidden');
+        loadingText.classList.remove('hidden');
+    });
+
+    // CSS for shake effect
+    const style = document.createElement('style');
+    style.innerHTML = `
+        .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+    `;
+    document.head.appendChild(style);
+
+    // Init first step
+    document.addEventListener('DOMContentLoaded', () => {
+        showStep(0);
+    });
 </script>
 {% endblock %}
