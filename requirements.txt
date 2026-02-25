@@ -9,3 +9,6 @@ google-generativeai
 python-dotenv
 groq
 psycopg2-binary
+authlib
+itsdangerous
+httpx
