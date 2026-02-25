@@ -189,7 +189,17 @@ async def logout(response: Response):
 async def login_google(request: Request):
     # Redirect to Google for authorization
     redirect_uri = request.url_for('auth_callback')
+    
+    # Force https on Vercel to avoid 'invalid_client' or redirect mapping issues
+    if "vercel.app" in str(request.base_url) or os.getenv("VERCEL"):
+        redirect_uri = str(redirect_uri).replace("http://", "https://")
+        
     print(f"DEBUG: OAuth Redirect URI: {redirect_uri}")
+    
+    if not os.getenv('GOOGLE_CLIENT_ID'):
+        print("ERROR: GOOGLE_CLIENT_ID not found in environment!")
+        return RedirectResponse(url='/login?error=Configuration missing', status_code=status.HTTP_302_FOUND)
+        
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 @app.get("/auth/callback")
