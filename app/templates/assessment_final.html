@@ -14,10 +14,19 @@
 
         <!-- Header -->
         <div class="px-6 py-6 sm:px-8 flex justify-between items-center bg-slate-50 border-b border-slate-100">
-            <div>
-                <h3 class="text-xl leading-6 font-bold text-slate-800">Phase 4: Final Stream Recommendation</h3>
-                <p class="mt-1 max-w-2xl text-sm text-slate-500 font-medium">Question <span id="current-step-text"
-                        class="text-violet-600 font-bold">1</span> of <span id="total-steps-text">10</span></p>
+            <div class="flex items-center gap-4">
+                <!-- Talking Buddy -->
+                <div id="talking-buddy" class="relative group">
+                    <div class="buddy-avatar text-4xl p-2 bg-white rounded-2xl shadow-sm border border-slate-200 transition-all duration-300 transform group-hover:scale-110">
+                        🧑‍🏫
+                    </div>
+                    <div id="buddy-status" class="absolute -top-1 -right-1 h-3 w-3 bg-slate-300 rounded-full border-2 border-white transition-colors duration-300"></div>
+                </div>
+                <div>
+                    <h3 class="text-xl leading-6 font-bold text-slate-800">Phase 4: Final Stream Recommendation</h3>
+                    <p class="mt-1 max-w-2xl text-sm text-slate-500 font-medium">Question <span id="current-step-text"
+                            class="text-violet-600 font-bold">1</span> of <span id="total-steps-text">10</span></p>
+                </div>
             </div>
             <button type="button" onclick="speakCurrentQuestion()"
                 class="p-3 rounded-full bg-white text-violet-600 shadow-sm border border-slate-200 hover:bg-violet-50 hover:text-violet-700 transition-all transform hover:scale-105"
@@ -131,6 +140,8 @@
     const progressBar = document.getElementById('progress-bar');
     const currentStepText = document.getElementById('current-step-text');
     const totalStepsText = document.getElementById('total-steps-text');
+    const buddyAvatar = document.querySelector('.buddy-avatar');
+    const buddyStatus = document.getElementById('buddy-status');
 
     function updateProgress() {
         const percentage = (currentStep / totalSteps) * 100;
@@ -185,6 +196,14 @@
         }
     }
 
+    function getBestVoice() {
+        const voices = window.speechSynthesis.getVoices();
+        return voices.find(v => v.name.includes('Google') && v.name.includes('English')) ||
+               voices.find(v => v.name.includes('Natural')) ||
+               voices.find(v => v.lang.startsWith('en')) ||
+               voices[0];
+    }
+
     function speakCurrentQuestion() {
         window.speechSynthesis.cancel();
         const currentQuestion = steps[currentStep]?.querySelector('.question-title')?.innerText;
@@ -195,11 +214,28 @@
             if (currentText) textToSpeak += ". . . " + currentText;
             
             const utterance = new SpeechSynthesisUtterance(textToSpeak);
+            utterance.voice = getBestVoice();
             utterance.rate = 1.0;
-            utterance.pitch = 1.0;
+            utterance.pitch = 1.1;
+
+            utterance.onstart = () => {
+                buddyAvatar.classList.add('buddy-talking');
+                buddyStatus.classList.remove('bg-slate-300');
+                buddyStatus.classList.add('bg-green-500');
+            };
+
+            utterance.onend = () => {
+                buddyAvatar.classList.remove('buddy-talking');
+                buddyStatus.classList.remove('bg-green-500');
+                buddyStatus.classList.add('bg-slate-300');
+            };
+
             window.speechSynthesis.speak(utterance);
         }
     }
+
+    // Refresh voices on load
+    window.speechSynthesis.onvoiceschanged = () => getBestVoice();
 
     // Speech Recognition (STT) for 12th/Above
     function toggleSpeech(questionId) {
@@ -264,9 +300,13 @@
         loadingText.classList.remove('hidden');
     });
 
-    // CSS for shake effect
+    // CSS for buddy and shake effect
     const style = document.createElement('style');
     style.innerHTML = `
+        .buddy-avatar { display: inline-block; animation: idleFloat 3s ease-in-out infinite; }
+        @keyframes idleFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+        .buddy-talking { animation: buddyTalk 0.2s ease-in-out infinite; }
+        @keyframes buddyTalk { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
         .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
         @keyframes shake {
             10%, 90% { transform: translate3d(-1px, 0, 0); }

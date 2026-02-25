@@ -11,11 +11,20 @@
                 style="width: 0%"></div>
         </div>
 
-        <div class="px-6 py-6 sm:px-8 flex justify-between items-center bg-slate-50 border-b border-slate-100">
-            <div>
-                <h3 class="text-xl leading-6 font-bold text-slate-800">Career Personality Assessment</h3>
-                <p class="mt-1 max-w-2xl text-sm text-slate-500 font-medium">Question <span id="current-step-text"
-                        class="text-violet-600 font-bold">1</span> of {{ questions|length }}</p>
+        <div class="px-6 py-6 sm:px-8 flex justify-between items-center bg-slate-50 border-b border-slate-100 relative">
+            <div class="flex items-center gap-4">
+                <!-- Talking Buddy -->
+                <div id="talking-buddy" class="relative group">
+                    <div class="buddy-avatar text-4xl p-2 bg-white rounded-2xl shadow-sm border border-slate-200 transition-all duration-300 transform group-hover:scale-110">
+                        🧑‍🏫
+                    </div>
+                    <div id="buddy-status" class="absolute -top-1 -right-1 h-3 w-3 bg-slate-300 rounded-full border-2 border-white transition-colors duration-300"></div>
+                </div>
+                <div>
+                    <h3 class="text-xl leading-6 font-bold text-slate-800">Career Personality Assessment</h3>
+                    <p class="mt-1 max-w-2xl text-sm text-slate-500 font-medium">Question <span id="current-step-text"
+                            class="text-violet-600 font-bold">1</span> of {{ questions|length }}</p>
+                </div>
             </div>
             <button type="button" onclick="speakCurrentQuestion()"
                 class="p-3 rounded-full bg-white text-violet-600 shadow-sm border border-slate-200 hover:bg-violet-50 hover:text-violet-700 transition-all transform hover:scale-105"
@@ -101,18 +110,39 @@
     </div>
 </div>
 
+<style>
+    .buddy-avatar {
+        display: inline-block;
+        animation: idleFloat 3s ease-in-out infinite;
+    }
+
+    @keyframes idleFloat {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-5px); }
+    }
+
+    .buddy-talking {
+        animation: buddyTalk 0.2s ease-in-out infinite;
+    }
+
+    @keyframes buddyTalk {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+</style>
+
 <script>
     let currentStep = 0;
     const steps = document.querySelectorAll('.question-step');
     const totalSteps = steps.length;
     const progressBar = document.getElementById('progress-bar');
     const currentStepText = document.getElementById('current-step-text');
+    const buddyAvatar = document.querySelector('.buddy-avatar');
+    const buddyStatus = document.getElementById('buddy-status');
 
     function showStep(index) {
-        // Hide all steps
         steps.forEach(step => step.classList.add('hidden'));
 
-        // If we've reached the end
         if (index >= totalSteps) {
             document.getElementById('submit-section').classList.remove('hidden');
             currentStepText.innerText = totalSteps;
@@ -120,12 +150,10 @@
             return;
         }
 
-        // Show current step
         steps[index].classList.remove('hidden');
         currentStepText.innerText = index + 1;
         updateProgress((index / totalSteps) * 100);
 
-        // Auto-speak the question
         setTimeout(() => speakCurrentQuestion(), 500);
     }
 
@@ -134,27 +162,50 @@
     }
 
     function handleSelection(input) {
-        // Short delay so user sees their selection highlight before it vanishes
         setTimeout(() => {
             currentStep++;
             showStep(currentStep);
         }, 400);
     }
 
+    function getBestVoice() {
+        const voices = window.speechSynthesis.getVoices();
+        // Priority: Natural English voices
+        return voices.find(v => v.name.includes('Google') && v.name.includes('English')) ||
+               voices.find(v => v.name.includes('Natural')) ||
+               voices.find(v => v.lang.startsWith('en')) ||
+               voices[0];
+    }
+
     function speakCurrentQuestion() {
-        // Cancel any ongoing speech
         window.speechSynthesis.cancel();
 
         const currentQuestion = steps[currentStep]?.querySelector('.question-title')?.innerText;
         if (currentQuestion) {
             const utterance = new SpeechSynthesisUtterance(currentQuestion);
+            utterance.voice = getBestVoice();
             utterance.rate = 1.0;
-            utterance.pitch = 1.0;
+            utterance.pitch = 1.1; // Slightly more energetic
+
+            utterance.onstart = () => {
+                buddyAvatar.classList.add('buddy-talking');
+                buddyStatus.classList.remove('bg-slate-300');
+                buddyStatus.classList.add('bg-green-500');
+            };
+
+            utterance.onend = () => {
+                buddyAvatar.classList.remove('buddy-talking');
+                buddyStatus.classList.remove('bg-green-500');
+                buddyStatus.classList.add('bg-slate-300');
+            };
+
             window.speechSynthesis.speak(utterance);
         }
     }
 
-    // Initialize the first step
+    // Refresh voices on load
+    window.speechSynthesis.onvoiceschanged = () => getBestVoice();
+
     document.addEventListener('DOMContentLoaded', () => {
         showStep(currentStep);
 
