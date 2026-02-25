@@ -497,6 +497,9 @@ async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
     if not user:
          return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+    
+    if user.role != "admin":
+        return RedirectResponse(url="/dashboard", status_code=status.HTTP_302_FOUND)
 
     # 2. Fetch all users
     all_users = db.query(models.User).all()
@@ -515,7 +518,7 @@ async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
 async def delete_user(user_id: int, request: Request, db: Session = Depends(get_db)):
     # 1. Check admin auth
     current_user = get_current_user(request, db)
-    if not current_user: # In a real app, check role="admin"
+    if not current_user or current_user.role != "admin":
         return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
     
     # 2. Get User
