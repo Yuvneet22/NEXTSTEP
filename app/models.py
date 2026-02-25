@@ -9,6 +9,7 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
     full_name = Column(String)
+    contact_number = Column(String)
     role = Column(String, default="student")
     
     assessment = relationship("AssessmentResult", back_populates="user", uselist=False)

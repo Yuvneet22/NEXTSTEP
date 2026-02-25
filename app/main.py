@@ -124,6 +124,7 @@ async def signup(
     email: str = Form(...),
     password: str = Form(...),
     full_name: str = Form(...),
+    contact_number: str = Form(...),
     db: Session = Depends(get_db)
 ):
     # Check existing user
@@ -133,7 +134,7 @@ async def signup(
     
     # Create User
     hashed_pw = get_password_hash(password)
-    new_user = models.User(email=email, hashed_password=hashed_pw, full_name=full_name)
+    new_user = models.User(email=email, hashed_password=hashed_pw, full_name=full_name, contact_number=contact_number)
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
@@ -167,23 +168,6 @@ async def logout(response: Response):
     response.delete_cookie("user_id")
     return response
 
-@app.get("/login/google")
-async def login_google(request: Request, db: Session = Depends(get_db)):
-    # Mock Google Login
-    email = "student@gmail.com"
-    user = db.query(models.User).filter(models.User.email == email).first()
-    
-    if not user:
-        # Create Google User if not exists
-        hashed_pw = get_password_hash("google_demo_pass")
-        user = models.User(email=email, hashed_password=hashed_pw, full_name="Google Student")
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-    
-    response = RedirectResponse(url="/dashboard", status_code=status.HTTP_302_FOUND)
-    response.set_cookie(key="user_id", value=str(user.id))
-    return response
 
 # --- Assessment Data ---
 
