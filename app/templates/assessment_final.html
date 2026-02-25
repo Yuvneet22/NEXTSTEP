@@ -308,18 +308,9 @@
         loadingText.classList.remove('hidden');
     });
 
-    // CSS for buddy and shake effect
+    // CSS for shake effect
     const style = document.createElement('style');
     style.innerHTML = `
-        #talking-buddy { animation: orbWander 15s ease-in-out infinite alternate; }
-        @keyframes orbWander { 0% { transform: translate(0, 0); } 25% { transform: translate(15px, 25px); } 50% { transform: translate(-20px, 15px); } 75% { transform: translate(10px, -20px); } 100% { transform: translate(-10px, -10px); } }
-        .buddy-orb { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); animation: orbBreathe 4s ease-in-out infinite; }
-        @keyframes orbBreathe { 0%, 100% { transform: scale(1); box-shadow: 0 0 25px rgba(139,92,246,0.5); } 50% { transform: scale(1.08); box-shadow: 0 0 45px rgba(139,92,246,0.8); } }
-        .pulse-ring { animation: ringExpand 2.5s cubic-bezier(0, 0, 0.2, 1) infinite; visibility: hidden; }
-        @keyframes ringExpand { 0% { transform: scale(0.6); opacity: 0; } 20% { opacity: 0.6; } 100% { transform: scale(2.8); opacity: 0; } }
-        .buddy-talking .pulse-ring { visibility: visible; }
-        .buddy-talking .buddy-orb { animation: orbVibrate 0.2s linear infinite; border-color: rgba(167, 139, 250, 0.9); }
-        @keyframes orbVibrate { 0%, 100% { transform: scale(1.08) translate(0, 0); } 33% { transform: scale(1.1) translate(2px, -1px); } 66% { transform: scale(1.06) translate(-2px, 1px); } }
         .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
         @keyframes shake {
             10%, 90% { transform: translate3d(-1px, 0, 0); }

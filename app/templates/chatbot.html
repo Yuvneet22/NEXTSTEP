@@ -100,6 +100,18 @@
     </div>
 </div>
 
+<!-- Floating Premium AI Buddy Orb -->
+<div id="talking-buddy" class="fixed top-24 right-8 z-[100] flex items-center justify-center w-20 h-20 pointer-events-none">
+    <div class="pulse-ring absolute inset-0 rounded-full bg-violet-400 opacity-0"></div>
+    <div class="pulse-ring absolute inset-0 rounded-full bg-indigo-400 opacity-0" style="animation-delay: 0.5s"></div>
+    
+    <div class="buddy-orb relative w-14 h-14 rounded-full bg-gradient-to-br from-violet-600 to-indigo-700 shadow-[0_0_30px_rgba(139,92,246,0.6)] flex items-center justify-center border-2 border-violet-400/30 overflow-hidden">
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.2),transparent)]"></div>
+        <span class="text-3xl z-10">✨</span>
+    </div>
+    <div id="buddy-status" class="absolute bottom-1 right-1 h-5 w-5 bg-slate-400 rounded-full border-2 border-white shadow-lg z-[110] transition-colors duration-300"></div>
+</div>
+
 <script>
     const chatBox = document.getElementById('chat-box');
     const chatForm = document.getElementById('chat-form');
@@ -237,10 +249,17 @@
         chatBox.appendChild(div);
         chatBox.scrollTop = chatBox.scrollHeight;
 
+        const talkingBuddy = document.getElementById('talking-buddy');
+        const buddyStatus = document.getElementById('buddy-status');
         const contentDiv = div.querySelector('#ai-response-content');
         let fullText = "";
 
         try {
+            // Trigger Talking State
+            talkingBuddy.classList.add('buddy-talking');
+            buddyStatus.classList.remove('bg-slate-400');
+            buddyStatus.classList.add('bg-green-400', 'shadow-[0_0_8px_#4ade80]');
+
             // 3. Call API
             const response = await fetch('/chatbot/message', {
                 method: 'POST',
@@ -267,7 +286,6 @@
                 fullText += chunk;
 
                 // Update content with partial markdown rendering
-                // Note: Frequent re-rendering can be heavy but usually fine for text chats
                 contentDiv.innerHTML = marked.parse(fullText);
                 chatBox.scrollTop = chatBox.scrollHeight;
             }
@@ -276,6 +294,11 @@
             contentDiv.innerHTML = `<p class="text-red-500">Sorry, I'm having trouble connecting to the server. Please try again later.</p>`;
             console.error('Error:', error);
         } finally {
+            // End Talking State
+            talkingBuddy.classList.remove('buddy-talking');
+            buddyStatus.classList.remove('bg-green-400', 'shadow-[0_0_8px_#4ade80]');
+            buddyStatus.classList.add('bg-slate-400');
+
             userInput.disabled = false;
             sendBtn.disabled = false;
             userInput.focus();

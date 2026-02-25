@@ -92,7 +92,7 @@ from data.questions_12th import questions_12th
 from data.questions_above_12th import questions_above_12th
 
 # Create Tables - Enabled for local development
-models.Base.metadata.create_all(bind=engine)
+# models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="NextStep")
 
@@ -167,11 +167,11 @@ async def login_page(request: Request):
 @app.post("/login")
 async def login(
     request: Request,
-    username: str = Form(...), # OAuth2PasswordRequestForm uses 'username' for email often, but standard form can be 'email'
+    email: str = Form(...),
     password: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    user = db.query(models.User).filter(models.User.email == username).first()
+    user = db.query(models.User).filter(models.User.email == email).first()
     if not user or not verify_password(password, user.hashed_password):
          return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid credentials"})
     
@@ -212,7 +212,7 @@ async def auth_callback(request: Request, db: Session = Depends(get_db)):
     if not user:
         # Create Google User with a random password since they use OAuth
         hashed_pw = get_password_hash(os.urandom(24).hex())
-        user = models.User(email=email, hashed_password=hashed_pw, full_name=full_name)
+        user = models.User(email=email, hashed_password=hashed_pw, full_name=full_name, contact_number=None)
         db.add(user)
         db.commit()
         db.refresh(user)
@@ -906,7 +906,7 @@ async def chatbot_page(request: Request, db: Session = Depends(get_db)):
     
     return templates.TemplateResponse("chatbot.html", {"request": request, "user": user, "history": history})
 
-# ... (Previous imports remain)
+# --- Chatbot Routes ---
 
 @app.post("/chatbot/message")
 async def chatbot_message(request: Request, chat_req: ChatRequest, db: Session = Depends(get_db)):
