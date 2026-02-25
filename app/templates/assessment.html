@@ -12,19 +12,10 @@
         </div>
 
         <div class="px-6 py-6 sm:px-8 flex justify-between items-center bg-slate-50 border-b border-slate-100 relative">
-            <div class="flex items-center gap-4">
-                <!-- Talking Buddy -->
-                <div id="talking-buddy" class="relative group">
-                    <div class="buddy-avatar text-4xl p-2 bg-white rounded-2xl shadow-sm border border-slate-200 transition-all duration-300 transform group-hover:scale-110">
-                        🧑‍🏫
-                    </div>
-                    <div id="buddy-status" class="absolute -top-1 -right-1 h-3 w-3 bg-slate-300 rounded-full border-2 border-white transition-colors duration-300"></div>
-                </div>
-                <div>
-                    <h3 class="text-xl leading-6 font-bold text-slate-800">Career Personality Assessment</h3>
-                    <p class="mt-1 max-w-2xl text-sm text-slate-500 font-medium">Question <span id="current-step-text"
-                            class="text-violet-600 font-bold">1</span> of {{ questions|length }}</p>
-                </div>
+            <div>
+                <h3 class="text-xl leading-6 font-bold text-slate-800">Career Personality Assessment</h3>
+                <p class="mt-1 max-w-2xl text-sm text-slate-500 font-medium tracking-wide uppercase">Question <span id="current-step-text"
+                        class="text-violet-600 font-bold">1</span> of {{ questions|length }}</p>
             </div>
             <button type="button" onclick="speakCurrentQuestion()"
                 class="p-3 rounded-full bg-white text-violet-600 shadow-sm border border-slate-200 hover:bg-violet-50 hover:text-violet-700 transition-all transform hover:scale-105"
@@ -110,24 +101,70 @@
     </div>
 </div>
 
+<!-- Floating Premium AI Buddy Orb -->
+<div id="talking-buddy" class="fixed top-24 right-8 z-[100] flex items-center justify-center w-20 h-20 pointer-events-none">
+    <!-- Outer Pulse Rings -->
+    <div class="pulse-ring absolute inset-0 rounded-full bg-violet-400 opacity-0"></div>
+    <div class="pulse-ring absolute inset-0 rounded-full bg-indigo-400 opacity-0" style="animation-delay: 0.5s"></div>
+    
+    <!-- Inner Orb -->
+    <div class="buddy-orb relative w-14 h-14 rounded-full bg-gradient-to-br from-violet-600 to-indigo-700 shadow-[0_0_30px_rgba(139,92,246,0.6)] flex items-center justify-center border-2 border-violet-400/30 overflow-hidden">
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.2),transparent)]"></div>
+        <span class="text-3xl z-10">✨</span>
+    </div>
+
+    <!-- Status Indicator -->
+    <div id="buddy-status" class="absolute bottom-1 right-1 h-5 w-5 bg-slate-400 rounded-full border-2 border-white shadow-lg z-[110] transition-colors duration-300"></div>
+</div>
+
 <style>
-    .buddy-avatar {
-        display: inline-block;
-        animation: idleFloat 3s ease-in-out infinite;
+    /* Premium AI Orb Animations */
+    #talking-buddy {
+        animation: orbWander 15s ease-in-out infinite alternate;
     }
 
-    @keyframes idleFloat {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-5px); }
+    @keyframes orbWander {
+        0% { transform: translate(0, 0); }
+        25% { transform: translate(15px, 25px); }
+        50% { transform: translate(-20px, 15px); }
+        75% { transform: translate(10px, -20px); }
+        100% { transform: translate(-10px, -10px); }
     }
 
-    .buddy-talking {
-        animation: buddyTalk 0.2s ease-in-out infinite;
+    .buddy-orb {
+        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        animation: orbBreathe 4s ease-in-out infinite;
     }
 
-    @keyframes buddyTalk {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.1); }
+    @keyframes orbBreathe {
+        0%, 100% { transform: scale(1); box-shadow: 0 0 25px rgba(139,92,246,0.5); }
+        50% { transform: scale(1.08); box-shadow: 0 0 45px rgba(139,92,246,0.8); }
+    }
+
+    .pulse-ring {
+        animation: ringExpand 2.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+        visibility: hidden;
+    }
+
+    @keyframes ringExpand {
+        0% { transform: scale(0.6); opacity: 0; }
+        20% { opacity: 0.6; }
+        100% { transform: scale(2.8); opacity: 0; }
+    }
+
+    .buddy-talking .pulse-ring {
+        visibility: visible;
+    }
+
+    .buddy-talking .buddy-orb {
+        animation: orbVibrate 0.2s linear infinite;
+        border-color: rgba(167, 139, 250, 0.9);
+    }
+
+    @keyframes orbVibrate {
+        0%, 100% { transform: scale(1.08) translate(0, 0); }
+        33% { transform: scale(1.1) translate(2px, -1px); }
+        66% { transform: scale(1.06) translate(-2px, 1px); }
     }
 </style>
 
@@ -137,7 +174,7 @@
     const totalSteps = steps.length;
     const progressBar = document.getElementById('progress-bar');
     const currentStepText = document.getElementById('current-step-text');
-    const buddyAvatar = document.querySelector('.buddy-avatar');
+    const talkingBuddy = document.getElementById('talking-buddy');
     const buddyStatus = document.getElementById('buddy-status');
 
     function showStep(index) {
@@ -170,9 +207,9 @@
 
     function getBestVoice() {
         const voices = window.speechSynthesis.getVoices();
-        // Priority: Natural English voices
-        return voices.find(v => v.name.includes('Google') && v.name.includes('English')) ||
-               voices.find(v => v.name.includes('Natural')) ||
+        // Priority: Indian English (en-IN) versions first
+        return voices.find(v => v.lang === 'en-IN') ||
+               voices.find(v => v.name.includes('India') || v.name.includes('Indian')) ||
                voices.find(v => v.lang.startsWith('en')) ||
                voices[0];
     }
@@ -188,15 +225,15 @@
             utterance.pitch = 1.1; // Slightly more energetic
 
             utterance.onstart = () => {
-                buddyAvatar.classList.add('buddy-talking');
-                buddyStatus.classList.remove('bg-slate-300');
-                buddyStatus.classList.add('bg-green-500');
+                talkingBuddy.classList.add('buddy-talking');
+                buddyStatus.classList.remove('bg-slate-400');
+                buddyStatus.classList.add('bg-green-400', 'shadow-[0_0_8px_#4ade80]');
             };
 
             utterance.onend = () => {
-                buddyAvatar.classList.remove('buddy-talking');
-                buddyStatus.classList.remove('bg-green-500');
-                buddyStatus.classList.add('bg-slate-300');
+                talkingBuddy.classList.remove('buddy-talking');
+                buddyStatus.classList.remove('bg-green-400', 'shadow-[0_0_8px_#4ade80]');
+                buddyStatus.classList.add('bg-slate-400');
             };
 
             window.speechSynthesis.speak(utterance);
