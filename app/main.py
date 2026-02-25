@@ -11,6 +11,8 @@ import json
 import google.generativeai as genai
 from groq import Groq
 from dotenv import load_dotenv
+from starlette.middleware.sessions import SessionMiddleware
+from authlib.integrations.starlette_client import OAuth
 
 # Load Env
 load_dotenv()
@@ -21,6 +23,18 @@ if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
 groq_client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
+
+# OAuth Setup
+oauth = OAuth()
+oauth.register(
+    name='google',
+    client_id=os.getenv('GOOGLE_CLIENT_ID'),
+    client_secret=os.getenv('GOOGLE_CLIENT_SECRET'),
+    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+    client_kwargs={
+        'scope': 'openid email profile'
+    }
+)
 
 def generate_content_with_fallback(prompt):
     """
@@ -77,10 +91,13 @@ from data.questions_data import questions
 from data.questions_12th import questions_12th
 from data.questions_above_12th import questions_above_12th
 
-# # Create Tables - REMOVED for Vercel compatibility. Use scripts/init_supabase.py instead.
-# models.Base.metadata.create_all(bind=engine)
+# Create Tables - Enabled for local development
+models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="NextStep")
+
+# Add Session Middleware (needed for OAuth)
+app.add_middleware(SessionMiddleware, secret_key=os.getenv("SECRET_KEY", "a_very_secret_key_for_sessions"))
 
 # Mount Static & Templates
 # Mount Static & Templates
@@ -168,6 +185,41 @@ async def logout(response: Response):
     response.delete_cookie("user_id")
     return response
 
+@app.get("/login/google")
+async def login_google(request: Request):
+    # Redirect to Google for authorization
+    redirect_uri = request.url_for('auth_callback')
+    print(f"DEBUG: OAuth Redirect URI: {redirect_uri}")
+    return await oauth.google.authorize_redirect(request, redirect_uri)
+
+@app.get("/auth/callback")
+async def auth_callback(request: Request, db: Session = Depends(get_db)):
+    try:
+        token = await oauth.google.authorize_access_token(request)
+    except Exception as e:
+        print(f"OAuth Error: {e}")
+        return RedirectResponse(url='/login?error=OAuth failed', status_code=status.HTTP_302_FOUND)
+    
+    user_info = token.get('userinfo')
+    if not user_info:
+        return RedirectResponse(url='/login?error=No user info', status_code=status.HTTP_302_FOUND)
+    
+    email = user_info.get('email')
+    full_name = user_info.get('name', 'Google User')
+    
+    # Check if user exists, otherwise create
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        # Create Google User with a random password since they use OAuth
+        hashed_pw = get_password_hash(os.urandom(24).hex())
+        user = models.User(email=email, hashed_password=hashed_pw, full_name=full_name)
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    
+    response = RedirectResponse(url="/dashboard", status_code=status.HTTP_302_FOUND)
+    response.set_cookie(key="user_id", value=str(user.id))
+    return response
 
 # --- Assessment Data ---
 
@@ -854,9 +906,7 @@ async def chatbot_page(request: Request, db: Session = Depends(get_db)):
     
     return templates.TemplateResponse("chatbot.html", {"request": request, "user": user, "history": history})
 
-from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
-
-# ... (Previous imports remain, ensure StreamingResponse is available)
+# ... (Previous imports remain)
 
 @app.post("/chatbot/message")
 async def chatbot_message(request: Request, chat_req: ChatRequest, db: Session = Depends(get_db)):
