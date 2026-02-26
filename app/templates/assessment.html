@@ -4,14 +4,16 @@
 
 {% block content %}
 <div class="max-w-3xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-    <div class="bg-white shadow-xl rounded-2xl overflow-hidden border border-slate-100">
-        <div class="w-full bg-slate-100 h-2.5">
+    <div class="bg-white/70 backdrop-blur-xl shadow-2xl rounded-3xl overflow-hidden border border-white/50">
+        <div class="w-full bg-slate-100 h-2.5 relative overflow-hidden">
             <div id="progress-bar"
-                class="bg-gradient-to-r from-violet-500 to-indigo-600 h-2.5 transition-all duration-500 ease-out"
-                style="width: 0%"></div>
+                class="bg-gradient-to-r from-violet-500 via-purple-500 to-indigo-600 h-2.5 transition-all duration-700 ease-out relative"
+                style="width: 0%">
+                <div class="absolute top-0 right-0 bottom-0 w-10 bg-white/40 blur-[4px] -skew-x-12 translate-x-full animate-[shimmer_2s_infinite]"></div>
+            </div>
         </div>
 
-        <div class="px-6 py-6 sm:px-8 flex justify-between items-center bg-slate-50 border-b border-slate-100 relative">
+        <div class="px-6 py-6 sm:px-8 flex justify-between items-center bg-violet-50/50 border-b border-violet-100 relative">
             <div>
                 <h3 class="text-xl leading-6 font-bold text-slate-800">Career Personality Assessment</h3>
                 <p class="mt-1 max-w-2xl text-sm text-slate-500 font-medium tracking-wide uppercase">Question <span id="current-step-text"
@@ -44,16 +46,16 @@
                                 onchange="handleSelection(this)" class="peer sr-only">
 
                             <div
-                                class="h-full rounded-2xl border-2 border-slate-200 bg-white overflow-hidden transition-all duration-300 ease-in-out hover:shadow-xl hover:border-violet-300 hover:-translate-y-1 peer-checked:border-violet-600 peer-checked:ring-4 peer-checked:ring-violet-50/50">
+                                class="h-full rounded-2xl border-2 border-slate-200/60 bg-white/80 overflow-hidden transition-all duration-500 ease-in-out hover:shadow-2xl hover:shadow-violet-200/50 hover:border-violet-300 hover:-translate-y-2 peer-checked:border-emerald-500 peer-checked:ring-4 peer-checked:ring-emerald-100 group">
                                 <div class="aspect-w-16 aspect-h-12 bg-slate-100 relative overflow-hidden">
                                     <img src="{{ opt.image }}" alt="{{ opt.text }}"
                                         class="object-cover w-full h-full transition-transform duration-700 group-hover:scale-110">
 
                                     <!-- Overlay for checked state -->
                                     <div
-                                        class="absolute inset-0 bg-violet-900 bg-opacity-0 transition-all duration-300 peer-checked:bg-opacity-20 flex items-center justify-center opacity-0 peer-checked:opacity-100 backdrop-blur-[1px]">
+                                        class="absolute inset-0 bg-emerald-900/0 transition-all duration-500 peer-checked:bg-emerald-900/20 flex items-center justify-center opacity-0 peer-checked:opacity-100 backdrop-blur-[2px]">
                                         <div
-                                            class="bg-violet-600 rounded-full p-3 shadow-lg transform scale-0 peer-checked:scale-100 transition-transform duration-300">
+                                            class="bg-emerald-500 rounded-full p-3 shadow-lg transform scale-0 peer-checked:scale-100 transition-transform duration-500 animate-[bounce_0.5s_ease-in-out]">
                                             <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor"
                                                 viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
@@ -85,8 +87,9 @@
                     <p class="text-slate-500 mb-8 max-w-md mx-auto">Great job! We've analyzed your responses. Click
                         below to reveal your personality archetype.</p>
                     <button type="submit" id="reveal-btn"
-                        class="w-full sm:w-auto py-4 px-10 rounded-2xl shadow-xl shadow-violet-200 text-lg font-bold text-white bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 transition transform hover:scale-105 ring-offset-2 focus:ring-2 focus:ring-violet-500 flex items-center justify-center mx-auto min-w-[240px]">
-                        <span id="btn-text">Reveal My Profile</span>
+                        class="w-full sm:w-auto py-4 px-10 rounded-2xl shadow-xl shadow-violet-200/50 text-lg font-bold text-white bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-500 hover:via-purple-500 hover:to-indigo-500 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 ring-offset-2 focus:ring-4 focus:ring-violet-300 flex items-center justify-center mx-auto min-w-[240px] relative overflow-hidden group">
+                        <div class="absolute inset-0 bg-white/20 -skew-x-12 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
+                        <span id="btn-text" class="relative z-10">Reveal My Profile</span>
                         <div id="btn-spinner" class="hidden ml-3">
                             <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>

@@ -25,12 +25,26 @@
         @keyframes orbVibrate { 0%, 100% { transform: scale(1.08) translate(0, 0); } 33% { transform: scale(1.1) translate(2px, -1px); } 66% { transform: scale(1.06) translate(-2px, 1px); } }
         .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
         @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
+        /* Global Background Animation */
+        .animate-blob { animation: blob 7s infinite; }
+        .animation-delay-2000 { animation-delay: 2s; }
+        .animation-delay-4000 { animation-delay: 4s; }
+        @keyframes blob {
+            0% { transform: translate(0px, 0px) scale(1); }
+            33% { transform: translate(30px, -50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+            100% { transform: translate(0px, 0px) scale(1); }
+        }
     </style>
 </head>
 
-<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col relative overflow-x-hidden">
+    <!-- Global Animated Background -->
+    <div class="fixed inset-0 min-h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-violet-100 via-indigo-50 to-purple-50 -z-10"></div>
+    <div class="fixed top-0 right-1/4 w-96 h-96 bg-indigo-300/30 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000 -z-10 pointer-events-none"></div>
+    <div class="fixed -bottom-32 left-1/3 w-96 h-96 bg-pink-300/30 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-4000 -z-10 pointer-events-none"></div>
 
-    <nav class="bg-white/80 backdrop-blur-sm sticky top-0 z-50 border-b border-slate-200">
+    <nav class="bg-white/70 backdrop-blur-md sticky top-0 z-50 border-b border-violet-100 shadow-sm transition-all duration-300">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex">
@@ -58,12 +72,12 @@
                         Feedback
                     </a>
                     <span class="text-gray-700 mr-4 border-l pl-4 border-slate-300">Hello, {{ user.full_name }}</span>
-                    <a href="/logout" class="text-sm font-medium text-red-600 hover:text-red-500">Logout</a>
+                    <a href="/logout" class="text-sm font-medium text-rose-600 hover:text-rose-500 hover:scale-105 transition-transform">Logout</a>
                     {% else %}
                     <a href="/login"
-                        class="text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">Login</a>
+                        class="text-slate-600 hover:text-violet-600 px-3 py-2 rounded-lg text-sm font-bold transition-colors">Login</a>
                     <a href="/signup"
-                        class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 ml-2">Sign
+                        class="bg-gradient-to-r from-violet-600 to-indigo-600 text-white px-5 py-2 rounded-xl text-sm font-bold hover:from-violet-700 hover:to-indigo-700 ml-2 shadow-md shadow-violet-200 transform hover:-translate-y-0.5 transition-all">Sign
                         Up</a>
                     {% endif %}
                 </div>
@@ -75,9 +89,9 @@
         {% block content %}{% endblock %}
     </main>
 
-    <footer class="bg-white border-t border-slate-200 mt-auto">
+    <footer class="bg-white/50 backdrop-blur-sm border-t border-violet-100 mt-auto">
         <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-            <p class="text-center text-slate-400 text-sm">&copy; 2026 NextStep. All rights reserved.</p>
+            <p class="text-center text-slate-500 font-medium text-sm">&copy; 2026 NextStep. All rights reserved.</p>
         </div>
     </footer>
 
