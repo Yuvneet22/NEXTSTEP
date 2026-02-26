@@ -4,6 +4,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
+from .database import SessionLocal
 import bcrypt
 import re
 import json
@@ -1002,15 +1003,20 @@ async def chatbot_message(request: Request, chat_req: ChatRequest, db: Session =
     """
     
     # 3. Stream AI Response with Fallback
+    user_id = user.id
     async def generate():
         full_response_text = ""
+        # Create a new local session for the generator because the route session 
+        # closes after the response object is returned but before streaming finishes.
+        local_db = SessionLocal()
         try:
             # TRY GEMINI FIRST
             if GEMINI_API_KEY:
                 try:
-                    model = genai.GenerativeModel("gemini-flash-latest")
-                    response = model.generate_content(prompt, stream=True)
-                    for chunk in response:
+                    print(f"AI Chat for User {user_id}: Trying Gemini...")
+                    model = genai.GenerativeModel("gemini-1.5-flash-latest")
+                    response = await model.generate_content_async(prompt, stream=True)
+                    async for chunk in response:
                         if chunk.text:
                             text_chunk = chunk.text
                             full_response_text += text_chunk
@@ -1020,20 +1026,21 @@ async def chatbot_message(request: Request, chat_req: ChatRequest, db: Session =
                     # FALLBACK TO GROQ
                     if groq_client:
                         try:
-                            stream = groq_client.chat.completions.create(
+                            stream = await groq_client.chat.completions.create(
                                 messages=[{"role": "user", "content": prompt}],
                                 model="llama-3.3-70b-versatile",
                                 stream=True,
                             )
-                            for chunk in stream:
+                            async for chunk in stream:
                                 if chunk.choices[0].delta.content:
                                     text_chunk = chunk.choices[0].delta.content
                                     full_response_text += text_chunk
                                     yield text_chunk
                         except Exception as groq_e:
-                            raise Exception(f"Both Chat APIs failed. Gemini: {gemini_e}, Groq: {groq_e}")
+                            print(f"Chatbot Groq Error: {groq_e}")
+                            yield f"I'm sorry, both AI services are currently unavailable. (Gemini: {str(gemini_e)}, Groq: {str(groq_e)})"
                     else:
-                        raise gemini_e
+                        yield f"AI Service error: {str(gemini_e)}"
             else:
                  # Demo Mode Simulation
                  fake_response = "I'm in demo mode (No API Key). Based on your profile, I'd suggest exploring based on your interests! (Please set GEMINI_API_KEY to get real AI responses)"
@@ -1042,21 +1049,24 @@ async def chatbot_message(request: Request, chat_req: ChatRequest, db: Session =
                      full_response_text += text_chunk
                      yield text_chunk
                      import asyncio
-                     await asyncio.sleep(0.05) # Async sleep for streaming
+                     await asyncio.sleep(0.05) 
             
-            # Save AI Message
+            # Save AI Message using local_db
             if full_response_text:
-                ai_msg_db = models.ChatMessage(user_id=user.id, sender="ai", content=full_response_text)
-                db.add(ai_msg_db)
-                db.commit()
+                ai_msg_db = models.ChatMessage(user_id=user_id, sender="ai", content=full_response_text)
+                local_db.add(ai_msg_db)
+                local_db.commit()
+                print(f"AI Chat for User {user_id}: Message saved.")
 
         except Exception as e:
-            print(f"Chat Error: {e}")
+            print(f"Chat Error in generator: {e}")
             error_msg = f"I'm having a little trouble thinking right now. (Error: {str(e)})"
             yield error_msg
-            ai_msg_db = models.ChatMessage(user_id=user.id, sender="ai", content=error_msg)
-            db.add(ai_msg_db)
-            db.commit()
+            ai_msg_db = models.ChatMessage(user_id=user_id, sender="ai", content=error_msg)
+            local_db.add(ai_msg_db)
+            local_db.commit()
+        finally:
+            local_db.close()
 
     return StreamingResponse(generate(), media_type="text/plain")
 
