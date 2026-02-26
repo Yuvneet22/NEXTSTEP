@@ -17,6 +17,26 @@
         {% endif %}
     </div>
     <div class="px-6 py-6 sm:p-8">
+        
+        <!-- Progress Tracker -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div class="glass p-4 rounded-2xl border-l-4 {% if assessment %}border-emerald-500{% else %}border-amber-500{% endif %}">
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Phase 1 & 2</p>
+                <p class="text-lg font-bold">{% if assessment %}Completed ✅{% else %}Pending ⏳{% endif %}</p>
+            </div>
+            <div class="glass p-4 rounded-2xl border-l-4 {% if assessment and assessment.phase3_answers %}border-emerald-500{% else %}border-slate-300{% endif %}">
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Phase 3</p>
+                <p class="text-lg font-bold">{% if assessment and assessment.phase3_answers %}Completed ✅{% else %}Not Started{% endif %}</p>
+            </div>
+            <div class="glass p-4 rounded-2xl border-l-4 {% if assessment and assessment.final_answers %}border-emerald-500{% else %}border-slate-300{% endif %}">
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Final Phase</p>
+                <p class="text-lg font-bold">{% if assessment and assessment.final_answers %}Completed ✅{% else %}Not Started{% endif %}</p>
+            </div>
+            <div class="glass p-4 rounded-2xl border-l-4 border-emerald-500">
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Counselor Chat</p>
+                <p class="text-lg font-bold">Always Ready ✨</p>
+            </div>
+        </div>
 
         {% if not assessment %}
         <!-- Assessment CTA -->
@@ -87,17 +107,29 @@
         {% else %}
         <!-- Results Summary for Returning Users -->
         <div class="bg-white/80 backdrop-blur-sm border border-slate-200/60 rounded-2xl p-8 mb-8 hover:shadow-xl hover:shadow-violet-100/50 hover:border-violet-200 hover:-translate-y-1 transition-all duration-300 shadow-sm group">
-            <div class="flex items-center justify-between">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-6">
                 <div>
                     <h3 class="text-xl font-bold text-slate-900 group-hover:text-violet-900 transition-colors">Your Profile: <span class="text-violet-600">{{
                             assessment.phase_2_category }}</span></h3>
                     <p class="mt-2 text-sm text-slate-500 font-medium">{{ assessment.personality }} • {{
                         assessment.goal_status }}</p>
                 </div>
-                <a href="/assessment/result"
-                    class="inline-flex items-center px-5 py-2.5 border border-transparent text-sm font-bold rounded-xl text-white bg-violet-600 hover:bg-violet-700 shadow-md shadow-violet-200 transition-all hover:scale-105">
-                    View Full Report &rarr;
-                </a>
+                <div class="flex flex-wrap justify-center gap-3">
+                    <a href="/assessment/result"
+                        class="inline-flex items-center px-5 py-2.5 border border-transparent text-sm font-bold rounded-xl text-white bg-violet-600 hover:bg-violet-700 shadow-md shadow-violet-200 transition-all hover:scale-105">
+                        Full Report &rarr;
+                    </a>
+                    <a href="/chatbot"
+                        class="inline-flex items-center px-5 py-2.5 border border-slate-200 text-sm font-bold rounded-xl text-slate-700 bg-white hover:bg-slate-50 shadow-sm transition-all hover:scale-105">
+                        Resume Chat 💬
+                    </a>
+                    {% if not assessment.final_answers %}
+                    <a href="/assessment/final"
+                        class="inline-flex items-center px-5 py-2.5 border border-transparent text-sm font-bold rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-200 transition-all hover:scale-105">
+                        Continue Final Phase 🎯
+                    </a>
+                    {% endif %}
+                </div>
             </div>
         </div>
         {% endif %}

@@ -17,12 +17,21 @@
             <div>
                 <h3 class="text-lg leading-6 font-bold text-violet-900">Phase 3: Deep Dive Scenarios</h3>
                 <p class="mt-1 max-w-2xl text-sm text-violet-700 font-medium">
-                    Category: <strong>{{ category_name }}</strong> | Scenario <span id="step-counter"
+                    Your Counselor: <strong>Expert Mentor</strong> | Scenario <span id="step-counter"
                         class="font-bold">1</span> of {{
                     scenarios|length }}
                 </p>
             </div>
             <div class="flex space-x-2">
+                <button type="button" id="record-btn"
+                    class="p-2.5 rounded-full bg-slate-100 text-slate-600 shadow-sm hover:bg-red-50 hover:text-red-600 transition-all border border-slate-200"
+                    title="Record Answer">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                    </svg>
+                </button>
                 <button type="button" onclick="speakCurrentScenario()"
                     class="p-2.5 rounded-full bg-white text-violet-600 shadow-sm hover:bg-violet-100 transition-colors border border-violet-200"
                     title="Replay Audio">
@@ -116,7 +125,7 @@
     
     <div class="buddy-orb relative w-14 h-14 rounded-full bg-gradient-to-br from-violet-600 to-indigo-700 shadow-[0_0_30px_rgba(139,92,246,0.6)] flex items-center justify-center border-2 border-violet-400/30 overflow-hidden">
         <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.2),transparent)]"></div>
-        <span class="text-3xl z-10">✨</span>
+        <span class="text-3xl z-10">🎓</span>
     </div>
     <div id="buddy-status" class="absolute bottom-1 right-1 h-5 w-5 bg-slate-400 rounded-full border-2 border-white shadow-lg z-[110] transition-colors duration-300"></div>
 </div>
@@ -187,19 +196,89 @@
         utterance.rate = 0.95;
         utterance.pitch = 1.1;
 
-        utterance.onstart = () => {
-            talkingBuddy.classList.add('buddy-talking');
-            buddyStatus.classList.remove('bg-slate-400');
-            buddyStatus.classList.add('bg-green-400', 'shadow-[0_0_8px_#4ade80]');
+    // --- Voice Recording Logic ---
+    let recognition;
+    const recordBtn = document.getElementById('record-btn');
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+
+        recognition.onstart = () => {
+            recordBtn.classList.add('bg-red-500', 'text-white', 'animate-pulse');
+            recordBtn.classList.remove('bg-slate-100', 'text-slate-600');
+            window.speechSynthesis.cancel();
         };
 
-        utterance.onend = () => {
-            talkingBuddy.classList.remove('buddy-talking');
-            buddyStatus.classList.remove('bg-green-400', 'shadow-[0_0_8px_#4ade80]');
-            buddyStatus.classList.add('bg-slate-400');
+        recognition.onend = () => {
+            recordBtn.classList.remove('bg-red-500', 'text-white', 'animate-pulse');
+            recordBtn.classList.add('bg-slate-100', 'text-slate-600');
         };
 
-        window.speechSynthesis.speak(utterance);
+        recognition.onresult = async (event) => {
+            const transcript = event.results[0][0].transcript;
+            console.log("Recorded:", transcript);
+            
+            // Show a small notification or processing state
+            const btnText = document.getElementById('talking-buddy').querySelector('span');
+            const originalEmoji = btnText.innerText;
+            btnText.innerText = '🤔';
+
+            try {
+                // We send the transcript to the backend to "resolve" which option it matches
+                // OR we do a simple client-side lookup for now to WOW the user
+                const options = steps[currentStep].querySelectorAll('.option-label');
+                let matched = false;
+                
+                // Fetch AI-based resolution if transcript is complex
+                const response = await fetch('/assessment/resolve-voice', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        transcript: transcript,
+                        options: Array.from(options).map(opt => ({
+                            value: opt.querySelector('input').value,
+                            text: opt.querySelector('.option-text').innerText
+                        }))
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const targetValue = data.best_match;
+                    const radio = steps[currentStep].querySelector(`input[value="${targetValue}"]`);
+                    if (radio) {
+                        radio.checked = true;
+                        matched = true;
+                        handleSelection();
+                    }
+                }
+
+                if (!matched) {
+                     alert("I couldn't quite match that to an option. Could you try again or click your choice?");
+                }
+            } catch (err) {
+                console.error("Resolution error:", err);
+            } finally {
+                btnText.innerText = originalEmoji;
+            }
+        };
+
+        recordBtn.addEventListener('click', () => {
+            if (recordBtn.classList.contains('bg-red-500')) {
+                recognition.stop();
+            } else {
+                recognition.start();
+            }
+        });
+    } else {
+        recordBtn.style.display = 'none';
+    }
+    // --- End Voice Logic ---
+
+    window.speechSynthesis.speak(utterance);
     }
 
     // Start

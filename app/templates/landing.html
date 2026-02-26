@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NextStep | AI-Powered Career Guidance</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com" defer></script>
+    <link rel="stylesheet" href="{{ url_for('static', path='css/landing.css') }}">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; }
+        .hero-gradient { background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.15), transparent), radial-gradient(circle at bottom left, rgba(139, 92, 246, 0.15), transparent); }
+        .glass { -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .text-gradient { background: linear-gradient(135deg, #fff 30%, #94a3b8); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+    </style>
+</head>
+<body class="hero-gradient min-h-screen text-slate-100 selection:bg-indigo-500/30">
+
+    <!-- Navbar -->
+    <nav class="fixed top-0 w-full z-50 glass border-b border-white/5 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <div class="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                    <span class="text-xl font-bold">N</span>
+                </div>
+                <span class="text-2xl font-extrabold tracking-tight text-white">NextStep</span>
+            </div>
+            <div class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
+                <a href="#features" class="hover:text-white transition-colors">Features</a>
+                <a href="#how-it-works" class="hover:text-white transition-colors">How it Works</a>
+                {% if user %}
+                <a href="/dashboard" class="px-5 py-2.5 rounded-full btn-premium text-white font-bold">Dashboard</a>
+                <a href="/logout" class="px-5 py-2.5 rounded-full border border-white/10 hover:bg-white/5 transition-all">Logout</a>
+                {% else %}
+                <a href="/login" class="px-5 py-2.5 rounded-full border border-white/10 hover:border-white/20 hover:bg-white/5 transition-all">Login</a>
+                <a href="/signup" class="px-5 py-2.5 rounded-full btn-premium text-white font-bold">Get Started</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative pt-32 pb-20 px-6 overflow-hidden">
+        <div class="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-16">
+            <div class="flex-1 text-center lg:text-left z-10">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold mb-6 animate-pulse">
+                    <span>🎓</span> NEW: Counselor Integrated Assessment
+                </div>
+                <h1 class="text-5xl lg:text-7xl font-extrabold leading-tight mb-8 text-gradient">
+                    Your Future, <br>
+                    <span class="text-indigo-500">Intelligently</span> Defined.
+                </h1>
+                <p class="text-lg text-slate-400 mb-10 max-w-xl">
+                    Discover the career path that matches your true potential. Experience the first AI-driven assessment with voice analysis and personalized mentorship.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                    <a href="/signup" class="px-8 py-4 rounded-2xl btn-premium text-white font-bold text-lg flex items-center justify-center gap-2">
+                        Start Your Journey
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                        </svg>
+                    </a>
+                    <a href="#features" class="px-8 py-4 rounded-2xl glass hover:bg-white/5 transition-all text-white font-bold text-lg flex items-center justify-center gap-2">
+                        Explore Features
+                    </a>
+                </div>
+            </div>
+            
+            <div class="flex-1 relative">
+                <div class="absolute inset-0 bg-indigo-500/20 blur-[100px] rounded-full"></div>
+                <div class="relative glass rounded-3xl p-4 border border-white/10 animate-float">
+                    <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=800&q=80" 
+                         alt="Students collaborating" 
+                         loading="eager" 
+                         fetchpriority="high"
+                         class="rounded-2xl shadow-2xl opacity-80 contrast-125 grayscale-[0.2]">
+                    <div class="absolute -bottom-6 -left-6 glass p-6 rounded-2xl shadow-2xl border-indigo-500/30">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
+                                <span class="text-2xl">📈</span>
+                            </div>
+                            <div>
+                                <p class="text-xs text-slate-400 uppercase font-bold tracking-widest">Accuracy</p>
+                                <p class="text-xl font-bold">98.5% AI Match</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-24 px-6 relative bg-slate-900/50">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl lg:text-5xl font-bold mb-4">Revolutionary AI Guidance</h2>
+                <p class="text-slate-400 max-w-2xl mx-auto">Experience a career guidance platform built for the next generation of students.</p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="feature-card glass p-8 rounded-3xl border border-white/5">
+                    <div class="w-14 h-14 bg-emerald-500/20 rounded-2xl flex items-center justify-center text-3xl mb-6">🎙️</div>
+                    <h3 class="text-xl font-bold mb-3">Audio Assessments</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed">
+                        Voice analysis goes beyond text, capturing your tone and confidence to provide more nuanced personality archetypes.
+                    </p>
+                </div>
+                
+                <!-- Feature 2 -->
+                <div class="feature-card glass p-8 rounded-3xl border border-white/5">
+                    <div class="w-14 h-14 bg-amber-500/20 rounded-2xl flex items-center justify-center text-3xl mb-6">🎓</div>
+                    <h3 class="text-xl font-bold mb-3">Expert AI Counselor</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed">
+                        Powered by Gemini and Groq (Llama 3), our chatbot provides instant, accurate career advice with zero downtime.
+                    </p>
+                </div>
+                
+                <!-- Feature 3 -->
+                <div class="feature-card glass p-8 rounded-3xl border border-white/5">
+                    <div class="w-14 h-14 bg-emerald-500/20 rounded-2xl flex items-center justify-center text-3xl mb-6">🎯</div>
+                    <h3 class="text-xl font-bold mb-3">Scenario Mapping</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed">
+                        Engage in real-world scenarios designed to test your strengths and map them to high-growth career streams.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-12 border-t border-white/5 px-6">
+        <div class="max-w-7xl mx-auto flex flex-col md:row justify-between items-center gap-8">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-lg flex items-center justify-center">
+                    <span class="text-sm font-bold">N</span>
+                </div>
+                <span class="text-lg font-bold">NextStep</span>
+            </div>
+            <p class="text-slate-500 text-sm">© 2026 NextStep AI. Empowering the future, one student at a time.</p>
+        </div>
+    </footer>
+
+</body>
+</html>

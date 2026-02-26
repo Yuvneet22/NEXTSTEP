@@ -19,15 +19,26 @@
                 <p class="mt-1 max-w-2xl text-sm text-slate-500 font-medium tracking-wide uppercase">Question <span id="current-step-text"
                         class="text-violet-600 font-bold">1</span> of {{ questions|length }}</p>
             </div>
-            <button type="button" onclick="speakCurrentQuestion()"
-                class="p-3 rounded-full bg-white text-violet-600 shadow-sm border border-slate-200 hover:bg-violet-50 hover:text-violet-700 transition-all transform hover:scale-105"
-                title="Read Aloud">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                </svg>
-            </button>
+            <div class="flex space-x-2">
+                <button type="button" id="record-btn"
+                    class="p-3 rounded-full bg-slate-100 text-slate-600 shadow-sm border border-slate-200 hover:bg-red-50 hover:text-red-600 transition-all transform hover:scale-105"
+                    title="Record Answer">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                    </svg>
+                </button>
+                <button type="button" onclick="speakCurrentQuestion()"
+                    class="p-3 rounded-full bg-white text-violet-600 shadow-sm border border-slate-200 hover:bg-violet-50 hover:text-violet-700 transition-all transform hover:scale-105"
+                    title="Read Aloud">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                    </svg>
+                </button>
+            </div>
         </div>
 
         <div class="px-6 py-8 sm:p-10">
@@ -48,7 +59,7 @@
                             <div
                                 class="h-full rounded-2xl border-2 border-slate-200/60 bg-white/80 overflow-hidden transition-all duration-500 ease-in-out hover:shadow-2xl hover:shadow-violet-200/50 hover:border-violet-300 hover:-translate-y-2 peer-checked:border-emerald-500 peer-checked:ring-4 peer-checked:ring-emerald-100 group">
                                 <div class="aspect-w-16 aspect-h-12 bg-slate-100 relative overflow-hidden">
-                                    <img src="{{ opt.image }}" alt="{{ opt.text }}"
+                                    <img src="{{ opt.image }}" alt="{{ opt.text }}" loading="lazy"
                                         class="object-cover w-full h-full transition-transform duration-700 group-hover:scale-110">
 
                                     <!-- Overlay for checked state -->
@@ -113,7 +124,7 @@
     <!-- Inner Orb -->
     <div class="buddy-orb relative w-14 h-14 rounded-full bg-gradient-to-br from-violet-600 to-indigo-700 shadow-[0_0_30px_rgba(139,92,246,0.6)] flex items-center justify-center border-2 border-violet-400/30 overflow-hidden">
         <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.2),transparent)]"></div>
-        <span class="text-3xl z-10">✨</span>
+        <span class="text-3xl z-10">🎓</span>
     </div>
 
     <!-- Status Indicator -->
@@ -176,19 +187,80 @@
             utterance.rate = 1.0;
             utterance.pitch = 1.1; // Slightly more energetic
 
-            utterance.onstart = () => {
-                talkingBuddy.classList.add('buddy-talking');
-                buddyStatus.classList.remove('bg-slate-400');
-                buddyStatus.classList.add('bg-green-400', 'shadow-[0_0_8px_#4ade80]');
-            };
+    // --- Voice Recording Logic ---
+    let recognition;
+    const recordBtn = document.getElementById('record-btn');
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.speechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
 
-            utterance.onend = () => {
-                talkingBuddy.classList.remove('buddy-talking');
-                buddyStatus.classList.remove('bg-green-400', 'shadow-[0_0_8px_#4ade80]');
-                buddyStatus.classList.add('bg-slate-400');
-            };
+        recognition.onstart = () => {
+            recordBtn.classList.add('bg-red-500', 'text-white', 'animate-pulse');
+            recordBtn.classList.remove('bg-slate-100', 'text-slate-600');
+            window.speechSynthesis.cancel();
+        };
 
-            window.speechSynthesis.speak(utterance);
+        recognition.onend = () => {
+            recordBtn.classList.remove('bg-red-500', 'text-white', 'animate-pulse');
+            recordBtn.classList.add('bg-slate-100', 'text-slate-600');
+        };
+
+        recognition.onresult = async (event) => {
+            const transcript = event.results[0][0].transcript;
+            console.log("Recorded:", transcript);
+            
+            const btnText = document.getElementById('talking-buddy').querySelector('span');
+            const originalEmoji = btnText.innerText;
+            btnText.innerText = '🤔';
+
+            try {
+                const options = steps[currentStep].querySelectorAll('input[type="radio"]');
+                const response = await fetch('/assessment/resolve-voice', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        transcript: transcript,
+                        options: Array.from(options).map(opt => ({
+                            value: opt.value,
+                            text: opt.closest('label').querySelector('p').innerText
+                        }))
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const targetValue = data.best_match;
+                    const radio = steps[currentStep].querySelector(`input[value="${targetValue}"]`);
+                    if (radio) {
+                        radio.checked = true;
+                        handleSelection(radio);
+                    }
+                } else {
+                     alert("I couldn't quite match that to an option. Could you try again or click your choice?");
+                }
+            } catch (err) {
+                console.error("Resolution error:", err);
+            } finally {
+                btnText.innerText = originalEmoji;
+            }
+        };
+
+        recordBtn.addEventListener('click', () => {
+            if (recordBtn.classList.contains('bg-red-500')) {
+                recognition.stop();
+            } else {
+                recognition.start();
+            }
+        });
+    } else {
+        recordBtn.style.display = 'none';
+    }
+    // --- End Voice Logic ---
+
+    window.speechSynthesis.speak(utterance);
         }
     }
 

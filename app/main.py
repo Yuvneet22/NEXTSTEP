@@ -5,6 +5,8 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 import bcrypt
+import re
+import json
 
 import os
 import json
@@ -14,7 +16,7 @@ from dotenv import load_dotenv
 from starlette.middleware.sessions import SessionMiddleware
 from authlib.integrations.starlette_client import OAuth
 
-# Load Env
+from groq import AsyncGroq
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
@@ -22,7 +24,7 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
-groq_client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
+groq_client = AsyncGroq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
 
 # OAuth Setup
 oauth = OAuth()
@@ -36,54 +38,41 @@ oauth.register(
     }
 )
 
-def generate_content_with_fallback(prompt):
+async def generate_content_with_fallback(prompt):
     """
-    Attempts to generate content using Gemini.
-    Falls back to Groq (Llama 3) if Gemini fails.
+    Attempts to generate content using Gemini (Async).
+    Falls back to Groq (Async) if Gemini fails.
     Returns cleaned text (JSON-ready).
     """
     try:
         # Try Gemini First
-        model = genai.GenerativeModel("gemini-flash-latest")
-        response = model.generate_content(prompt)
+        model = genai.GenerativeModel("gemini-1.5-flash-latest")
+        response = await model.generate_content_async(prompt)
         text = response.text
     except Exception as e:
-        print(f"Gemini Error (Switching to Groq): {e}")
+        print(f"Gemini Async Error (Switching to Groq): {e}")
         if not groq_client:
             raise e # No fallback available
         
         try:
-            # Fallback to Groq
-            chat_completion = groq_client.chat.completions.create(
-                messages=[
-                    {
-                        "role": "user",
-                        "content": prompt,
-                    }
-                ],
-                model="llama-3.3-70b-versatile",
+            # Fallback to Groq Async (Using global client)
+            chat_completion = await groq_client.chat.completions.create(
+                messages=[{"role": "user", "content": prompt}],
+                model="llama-3.1-8b-instant", # Faster model for fallback
             )
             text = chat_completion.choices[0].message.content
         except Exception as groq_e:
             raise Exception(f"Both APIs failed. Gemini: {e}, Groq: {groq_e}")
 
     # Robust JSON Extraction
-    import re
     try:
-        # Find JSON object between first { and last }
         match = re.search(r"\{.*\}", text, re.DOTALL)
-        if match:
-            text = match.group(0)
-        
-        # Remove markdown code blocks if still present
+        if match: text = match.group(0)
         text = text.replace("```json", "").replace("```", "").strip()
-        
-        # Remove trailing commas
         text = re.sub(r",\s*([\]}])", r"\1", text)
-        
         return text
     except Exception:
-        return text # Return original if extraction fails, let json.loads raise the error
+        return text
 
 from . import models
 from .database import SessionLocal, engine, get_db
@@ -95,6 +84,9 @@ from data.questions_above_12th import questions_above_12th
 # models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="NextStep")
+
+from fastapi.middleware.gzip import GZipMiddleware
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # Add Session Middleware (needed for OAuth)
 app.add_middleware(SessionMiddleware, secret_key=os.getenv("SECRET_KEY", "a_very_secret_key_for_sessions"))
@@ -127,9 +119,7 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
-    if user:
-        return RedirectResponse(url="/dashboard", status_code=status.HTTP_302_FOUND)
-    return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+    return templates.TemplateResponse("landing.html", {"request": request, "user": user})
 
 @app.get("/signup", response_class=HTMLResponse)
 async def signup_page(request: Request):
@@ -603,17 +593,18 @@ async def assessment_phase3_submit(
     # Generate Phase 3 Analysis using Gemini
     category = result.phase_2_category
     prompt_p3 = f"""
-    Analyze these scenario responses for a student identified as '{category}' (Class 10 level).
+    You are an expert career counselor who is fascinated by student potential. 
+    Analyze these deep-dive scenario responses for a student characterized as '{category}'.
     
     Scenarios & Answers:
     {json.dumps(answers, indent=2)}
     
-    Provide a specific, actionable advice paragraph (approx 3-4 sentences) focusing on their work style preferences revealed by these choices. 
-    Reflect on how they fit into the '{category}' archetype based on these nuances.
+    Provide a warm, sophisticated, and encouraging insight (3-4 sentences) that highlights the fascinating nuances of their personality. 
+    Start with a professional greeting or observation that feels like a real counselor session.
     """
     
     try:
-         result.phase3_analysis = generate_content_with_fallback(prompt_p3)
+         result.phase3_analysis = await generate_content_with_fallback(prompt_p3)
     except Exception as e:
          result.phase3_analysis = f"Analysis unavailable at this time. ({str(e)})"
         
@@ -862,22 +853,23 @@ async def assessment_final_submit(request: Request, db: Session = Depends(get_db
                     """
 
                 prompt = f"""
-                You are an expert career counselor. Analyze this profile for a {mode} grade student.
+                You are a fascinating and expert career counselor mentor. 
+                Analyze this profile for a {mode} grade student with deep curiosity and professional empathy.
 
                 Profile:
                 - Archetype: {phase2_cat}
-                - Answers:
+                - Insights Table:
                 {answers_summary}
 
                 Task:
                 {task_instruction}
 
-                Output MUST be raw JSON only matching this structure. Do not include markdown formatting or explanation text.
+                You must speak with authority yet warmth. Output MUST be raw JSON only matching this structure. 
                 {output_format}
                 """
                 
                 # Generate Content with Fallback
-                text = generate_content_with_fallback(prompt)
+                text = await generate_content_with_fallback(prompt)
                 print(f"DEBUG: AI Raw Text: {text}")
                 ai_data = json.loads(text)
                 
@@ -910,6 +902,10 @@ async def assessment_final_submit(request: Request, db: Session = Depends(get_db
 class ChatRequest(BaseModel):
     message: str
 
+class ResolveVoiceRequest(BaseModel):
+    transcript: str
+    options: list
+
 @app.get("/chatbot", response_class=HTMLResponse)
 async def chatbot_page(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
@@ -920,6 +916,31 @@ async def chatbot_page(request: Request, db: Session = Depends(get_db)):
     history = db.query(models.ChatMessage).filter(models.ChatMessage.user_id == user.id).order_by(models.ChatMessage.timestamp).all()
     
     return templates.TemplateResponse("chatbot.html", {"request": request, "user": user, "history": history})
+
+@app.post("/assessment/resolve-voice")
+async def resolve_voice(req: ResolveVoiceRequest):
+    """
+    Uses AI to match a voice transcript to one of the provided multiple-choice options.
+    """
+    prompt = f"""
+    The student spoke this answer for a career assessment question: "{req.transcript}"
+    
+    Which of these options best matches what they said?
+    Options:
+    {json.dumps(req.options, indent=2)}
+    
+    Output ONLY valid JSON with the field "best_match" containing the "value" of the matching option.
+    If no good match exists, return the most likely one based on interest.
+    """
+    
+    try:
+        clean_text = await generate_content_with_fallback(prompt)
+        result = json.loads(clean_text)
+        return result
+    except Exception as e:
+        print(f"Voice Resolution Error: {e}")
+        # Default to the first option if AI fails
+        return {"best_match": req.options[0]["value"] if req.options else "A"}
 
 # --- Chatbot Routes ---
 
@@ -959,7 +980,7 @@ async def chatbot_message(request: Request, chat_req: ChatRequest, db: Session =
 
     # 2. Construct System Prompt
     prompt = f"""
-    You are 'NextStep AI', an expert career counselor and student mentor.
+    You are 'NextStep Counselor', a fascinating and expert career mentor.
     
     USER CONTEXT:
     {context_str}
@@ -980,18 +1001,39 @@ async def chatbot_message(request: Request, chat_req: ChatRequest, db: Session =
     {user_message}
     """
     
-    # 3. Stream Gemini Response
+    # 3. Stream AI Response with Fallback
     async def generate():
         full_response_text = ""
         try:
+            # TRY GEMINI FIRST
             if GEMINI_API_KEY:
-                model = genai.GenerativeModel("gemini-flash-latest")
-                response = model.generate_content(prompt, stream=True)
-                for chunk in response:
-                    if chunk.text:
-                        text_chunk = chunk.text
-                        full_response_text += text_chunk
-                        yield text_chunk
+                try:
+                    model = genai.GenerativeModel("gemini-flash-latest")
+                    response = model.generate_content(prompt, stream=True)
+                    for chunk in response:
+                        if chunk.text:
+                            text_chunk = chunk.text
+                            full_response_text += text_chunk
+                            yield text_chunk
+                except Exception as gemini_e:
+                    print(f"Chatbot Gemini Error: {gemini_e}. Trying Groq fallback.")
+                    # FALLBACK TO GROQ
+                    if groq_client:
+                        try:
+                            stream = groq_client.chat.completions.create(
+                                messages=[{"role": "user", "content": prompt}],
+                                model="llama-3.3-70b-versatile",
+                                stream=True,
+                            )
+                            for chunk in stream:
+                                if chunk.choices[0].delta.content:
+                                    text_chunk = chunk.choices[0].delta.content
+                                    full_response_text += text_chunk
+                                    yield text_chunk
+                        except Exception as groq_e:
+                            raise Exception(f"Both Chat APIs failed. Gemini: {gemini_e}, Groq: {groq_e}")
+                    else:
+                        raise gemini_e
             else:
                  # Demo Mode Simulation
                  fake_response = "I'm in demo mode (No API Key). Based on your profile, I'd suggest exploring based on your interests! (Please set GEMINI_API_KEY to get real AI responses)"
@@ -999,13 +1041,14 @@ async def chatbot_message(request: Request, chat_req: ChatRequest, db: Session =
                      text_chunk = word + " "
                      full_response_text += text_chunk
                      yield text_chunk
-                     import time
-                     time.sleep(0.05) # Fake delay
+                     import asyncio
+                     await asyncio.sleep(0.05) # Async sleep for streaming
             
             # Save AI Message
-            ai_msg_db = models.ChatMessage(user_id=user.id, sender="ai", content=full_response_text)
-            db.add(ai_msg_db)
-            db.commit()
+            if full_response_text:
+                ai_msg_db = models.ChatMessage(user_id=user.id, sender="ai", content=full_response_text)
+                db.add(ai_msg_db)
+                db.commit()
 
         except Exception as e:
             print(f"Chat Error: {e}")

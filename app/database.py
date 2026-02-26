@@ -21,7 +21,10 @@ else:
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, 
     # SQLite-specific argument
-    connect_args={"check_same_thread": False} if SQLALCHEMY_DATABASE_URL.startswith("sqlite") else {}
+    connect_args={"check_same_thread": False} if SQLALCHEMY_DATABASE_URL.startswith("sqlite") else {},
+    # Pooling for production DBs (Postgres/MySQL)
+    pool_size=10 if not SQLALCHEMY_DATABASE_URL.startswith("sqlite") else None,
+    max_overflow=20 if not SQLALCHEMY_DATABASE_URL.startswith("sqlite") else None
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
