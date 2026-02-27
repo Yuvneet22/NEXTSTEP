@@ -47,7 +47,7 @@ async def generate_content_with_fallback(prompt):
     """
     try:
         # Try Gemini First
-        model = genai.GenerativeModel("gemini-1.5-flash-latest")
+        model = genai.GenerativeModel("gemini-1.5-flash")
         response = await model.generate_content_async(prompt)
         text = response.text
     except Exception as e:
@@ -715,7 +715,7 @@ Present the scenario story first, then clearly list Option A and Option B on sep
                 response = await model_ai.generate_content_async(prompt)
                 ai_text = response.text
             except Exception:
-                model_ai = genai.GenerativeModel("gemini-1.5-flash-latest")
+                model_ai = genai.GenerativeModel("gemini-1.5-flash")
                 response = await model_ai.generate_content_async(prompt)
                 ai_text = response.text
         elif groq_client:
@@ -1144,7 +1144,7 @@ Welcome the student warmly (1 sentence), then present this first question:
                 response = await model_ai.generate_content_async(prompt)
                 ai_text = response.text
             except Exception:
-                model_ai = genai.GenerativeModel("gemini-1.5-flash-latest")
+                model_ai = genai.GenerativeModel("gemini-1.5-flash")
                 response = await model_ai.generate_content_async(prompt)
                 ai_text = response.text
         elif groq_client:
@@ -1282,7 +1282,7 @@ async def chatbot_message(request: Request, chat_req: ChatRequest, db: Session =
             if GEMINI_API_KEY:
                 try:
                     print(f"AI Chat for User {user_id}: Trying Gemini...")
-                    model = genai.GenerativeModel("gemini-1.5-flash-latest")
+                    model = genai.GenerativeModel("gemini-1.5-flash")
                     response = await model.generate_content_async(prompt, stream=True)
                     async for chunk in response:
                         if chunk.text:
