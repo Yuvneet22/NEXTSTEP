@@ -4,6 +4,97 @@
 
 {% block content %}
 <div class="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8 relative z-10">
+
+  <!-- Tab Switcher -->
+  <div class="flex justify-center mb-6 gap-2">
+    <button id="tab-ai" onclick="switchTab('ai')"
+      class="tab-btn flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-bold transition-all shadow-sm border border-violet-200 bg-violet-600 text-white">
+      🤖 AI Chat Mode
+    </button>
+    <button id="tab-classic" onclick="switchTab('classic')"
+      class="tab-btn flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-bold transition-all shadow-sm border border-slate-300 bg-white text-slate-600 hover:border-violet-300 hover:text-violet-700">
+      📋 Classic Mode
+    </button>
+  </div>
+
+  <!-- ===================== AI CHAT MODE ===================== -->
+  <div id="ai-chat-panel">
+    <div class="bg-white/70 backdrop-blur-xl shadow-2xl rounded-3xl overflow-hidden border border-white/50 flex flex-col" style="height:75vh;">
+
+      <!-- Chat Header -->
+      <div class="px-6 py-4 bg-gradient-to-r from-indigo-600 to-violet-600 text-white flex items-center justify-between flex-shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-xl">🎓</div>
+          <div>
+            <h3 class="font-bold text-base leading-tight">AI Career Counsellor</h3>
+            <p class="text-indigo-200 text-xs">Phase 4 · Final Stream Recommendation · {{ mode }} grade</p>
+          </div>
+        </div>
+        <div id="ai-progress-badge" class="text-xs bg-white/20 px-3 py-1 rounded-full font-bold">
+          Q <span id="ai-step-counter">0</span> / <span id="ai-total">—</span>
+        </div>
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="w-full bg-indigo-100 h-1.5 flex-shrink-0">
+        <div id="ai-progress-bar" class="bg-gradient-to-r from-indigo-500 to-violet-500 h-1.5 transition-all duration-700" style="width:0%"></div>
+      </div>
+
+      <!-- Chat Messages -->
+      <div id="ai-chat-box" class="flex-grow p-6 overflow-y-auto space-y-4 bg-slate-50/60"></div>
+
+      <!-- Quick Reply Buttons (only for 10th mode MCQ) -->
+      {% if mode == '10th' %}
+      <div id="quick-replies" class="px-6 py-2 grid grid-cols-2 gap-2 flex-shrink-0 hidden">
+        <button onclick="sendQuickReply('a')" class="quick-opt py-2 rounded-xl border-2 border-indigo-200 bg-indigo-50 text-indigo-700 font-bold text-xs hover:bg-indigo-100 active:scale-95 transition-all">A</button>
+        <button onclick="sendQuickReply('b')" class="quick-opt py-2 rounded-xl border-2 border-violet-200 bg-violet-50 text-violet-700 font-bold text-xs hover:bg-violet-100 active:scale-95 transition-all">B</button>
+        <button onclick="sendQuickReply('c')" class="quick-opt py-2 rounded-xl border-2 border-teal-200 bg-teal-50 text-teal-700 font-bold text-xs hover:bg-teal-100 active:scale-95 transition-all">C</button>
+        <button onclick="sendQuickReply('d')" class="quick-opt py-2 rounded-xl border-2 border-emerald-200 bg-emerald-50 text-emerald-700 font-bold text-xs hover:bg-emerald-100 active:scale-95 transition-all">D</button>
+      </div>
+      {% endif %}
+
+      <!-- Finish Button (shown when done) -->
+      <div id="finish-container" class="px-6 py-4 hidden flex-shrink-0">
+        <form id="ai-submit-form" action="/assessment/final/submit" method="POST">
+          <input type="hidden" name="mode" value="{{ mode }}">
+          <div id="hidden-answers-container"></div>
+          <button type="submit"
+            class="w-full py-3.5 rounded-2xl text-white font-bold text-base bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 shadow-lg shadow-violet-200/50 transition-all hover:scale-[1.02] flex items-center justify-center gap-3">
+            <span id="finish-btn-text">🚀 Get My Career Path</span>
+            <div id="finish-spinner" class="hidden">
+              <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+              </svg>
+            </div>
+          </button>
+          <p id="loading-text-ai" class="hidden mt-3 text-center text-violet-600 font-bold animate-pulse text-sm">
+            AI is analyzing your profile... This may take 10 seconds.
+          </p>
+        </form>
+      </div>
+
+      <!-- Input Area -->
+      <div id="ai-input-area" class="bg-white border-t border-slate-200 px-4 py-3 flex-shrink-0">
+        <form id="ai-chat-form" class="flex gap-3 items-center">
+          <input type="text" id="ai-user-input"
+            class="flex-grow px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm transition-all"
+            placeholder="{% if mode == '10th' %}Type A, B, C or D…{% else %}Share your thoughts freely…{% endif %}"
+            autocomplete="off">
+          <button type="submit" id="ai-send-btn"
+            class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-colors shadow flex items-center gap-2 disabled:opacity-50">
+            Send
+            <svg class="h-4 w-4 rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+            </svg>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== CLASSIC MODE ===================== -->
+  <div id="classic-panel" class="hidden">
     <div class="bg-white/70 backdrop-blur-xl shadow-2xl rounded-3xl overflow-hidden border border-white/50">
         <!-- Progress Bar -->
         <div class="w-full bg-slate-100 h-2.5 relative overflow-hidden">
@@ -18,14 +109,12 @@
         <div class="px-6 py-6 sm:px-8 flex justify-between items-center bg-slate-50 border-b border-slate-100 relative">
             <div>
                 <h3 class="text-xl leading-6 font-bold text-slate-800">Phase 4: Final Stream Recommendation</h3>
-                <p class="mt-1 max-w-2xl text-sm text-slate-500 font-medium tracking-wide uppercase">Question <span id="current-step-text"
-                        class="text-violet-600 font-bold">1</span> of <span id="total-steps-text">10</span></p>
+                <p class="mt-1 max-w-2xl text-sm text-slate-500 font-medium tracking-wide uppercase">Question <span id="current-step-text" class="text-violet-600 font-bold">1</span> of <span id="total-steps-text">10</span></p>
             </div>
             <button type="button" onclick="speakCurrentQuestion()"
                 class="p-3 rounded-full bg-white text-violet-600 shadow-sm border border-slate-200 hover:bg-violet-50 hover:text-violet-700 transition-all transform hover:scale-105"
                 title="Read Aloud">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
                 </svg>
@@ -46,7 +135,6 @@
                                 <span class="inline-block px-3 py-1 text-xs font-semibold tracking-wide uppercase text-violet-600 bg-violet-100 rounded-full mb-3">{{ section.title }}</span>
                                 <h4 class="text-2xl font-extrabold text-slate-800 mb-2 question-title">{{ q.question }}</h4>
                             </div>
-
                             <div class="space-y-3">
                                 {% for opt in q.options %}
                                 <label class="relative flex items-center p-4 rounded-xl border-2 border-slate-200/60 bg-white/80 cursor-pointer transition-all duration-300 hover:shadow-lg hover:shadow-violet-200/50 hover:border-violet-300 hover:-translate-y-1 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50/50 has-[:checked]:shadow-emerald-200/30 group">
@@ -61,7 +149,7 @@
                         {% endfor %}
                     {% endfor %}
                 {% else %}
-                    <!-- Class 12th & Above: Stepper questions with TextArea -->
+                    <!-- Class 12th & Above: Stepper with TextArea -->
                     {% for q in questions %}
                     <div class="question-step hidden space-y-6" data-step="{{ loop.index0 }}">
                         <div class="mb-4">
@@ -69,7 +157,6 @@
                             <h4 class="text-2xl font-extrabold text-slate-800 mb-2 question-title">{{ q.title }}</h4>
                         </div>
                         <p class="text-slate-600 text-lg italic bg-slate-50 p-4 rounded-xl border border-slate-100 mb-6">"{{ q.text }}"</p>
-
                         <div class="relative">
                             <label for="{{ q.id }}" class="block text-sm font-medium text-slate-500 mb-2 uppercase tracking-wider">Your Response (Type or Speak)</label>
                             <div class="flex gap-3">
@@ -78,15 +165,13 @@
                                     placeholder="I would..."></textarea>
                                 <button type="button" onclick="toggleSpeech('{{ q.id }}')"
                                     class="inline-flex items-center px-4 py-2 border border-slate-200 shadow-sm text-2xl rounded-xl text-slate-700 bg-white hover:bg-indigo-50 hover:text-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
-                                    id="btn-{{ q.id }}" title="Record Audio">
-                                    🎤
+                                    id="btn-{{ q.id }}" title="Record Audio">🎤
                                 </button>
                             </div>
                             <p id="status-{{ q.id }}" class="text-sm font-bold text-indigo-600 mt-2 hidden animate-pulse flex items-center gap-2">
                                 <span class="h-2 w-2 bg-indigo-600 rounded-full"></span> Listening...
                             </p>
                         </div>
-
                         <div class="pt-6 flex justify-between items-center">
                             <button type="button" onclick="prevStep()" class="px-6 py-3 text-slate-500 font-bold hover:text-slate-800 transition-colors rounded-xl hover:bg-slate-100">Previous</button>
                             <button type="button" onclick="nextStep()" class="px-8 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold rounded-xl hover:from-indigo-700 hover:to-violet-700 transition-all shadow-lg shadow-indigo-200/50 transform hover:scale-105">Next Question</button>
@@ -106,7 +191,6 @@
                         <h3 class="text-3xl font-extrabold text-slate-900 mb-2">Assessment Complete!</h3>
                         <p class="text-slate-500 text-lg max-w-md mx-auto">Click below to generate your personalized AI career insights and stream recommendations.</p>
                     </div>
-
                     <button type="submit" id="submit-btn"
                         class="w-full py-4 px-8 border border-transparent rounded-2xl shadow-xl shadow-violet-200/50 text-xl font-bold text-white bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-500 hover:via-purple-500 hover:to-indigo-500 focus:outline-none focus:ring-4 focus:ring-violet-300 transition-all duration-300 transform hover:-translate-y-1 hover:scale-[1.02] flex items-center justify-center relative overflow-hidden group">
                         <div class="absolute inset-0 bg-white/20 -skew-x-12 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
@@ -125,196 +209,334 @@
             </form>
         </div>
     </div>
+  </div>
 </div>
 
-<!-- Floating Premium AI Buddy Orb -->
+<!-- Floating AI Buddy Orb -->
 <div id="talking-buddy" class="fixed top-24 right-8 z-[100] flex items-center justify-center w-20 h-20 pointer-events-none">
-    <!-- Outer Pulse Rings -->
     <div class="pulse-ring absolute inset-0 rounded-full bg-violet-400 opacity-0"></div>
     <div class="pulse-ring absolute inset-0 rounded-full bg-indigo-400 opacity-0" style="animation-delay: 0.5s"></div>
-    
-    <!-- Inner Orb -->
     <div class="buddy-orb relative w-14 h-14 rounded-full bg-gradient-to-br from-violet-600 to-indigo-700 shadow-[0_0_30px_rgba(139,92,246,0.6)] flex items-center justify-center border-2 border-violet-400/30 overflow-hidden">
         <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.2),transparent)]"></div>
         <span class="text-3xl z-10">🎓</span>
     </div>
-
-    <!-- Status Indicator -->
     <div id="buddy-status" class="absolute bottom-1 right-1 h-5 w-5 bg-slate-400 rounded-full border-2 border-white shadow-lg z-[110] transition-colors duration-300"></div>
 </div>
 
+<!-- Load Marked.js -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
 <script>
-    let currentStep = 0;
-    const steps = document.querySelectorAll('.question-step');
-    const totalSteps = steps.length;
-    const progressBar = document.getElementById('progress-bar');
-    const currentStepText = document.getElementById('current-step-text');
-    const totalStepsText = document.getElementById('total-steps-text');
+const MODE = "{{ mode }}";
+
+// ==================== TAB SWITCHING ====================
+function switchTab(tab) {
+    const aiPanel = document.getElementById('ai-chat-panel');
+    const classicPanel = document.getElementById('classic-panel');
+    const tabAI = document.getElementById('tab-ai');
+    const tabClassic = document.getElementById('tab-classic');
+
+    if (tab === 'ai') {
+        aiPanel.classList.remove('hidden');
+        classicPanel.classList.add('hidden');
+        tabAI.classList.add('bg-violet-600', 'text-white', 'border-violet-200');
+        tabAI.classList.remove('bg-white', 'text-slate-600', 'border-slate-300');
+        tabClassic.classList.remove('bg-violet-600', 'text-white', 'border-violet-200');
+        tabClassic.classList.add('bg-white', 'text-slate-600', 'border-slate-300');
+    } else {
+        classicPanel.classList.remove('hidden');
+        aiPanel.classList.add('hidden');
+        tabClassic.classList.add('bg-violet-600', 'text-white', 'border-violet-200');
+        tabClassic.classList.remove('bg-white', 'text-slate-600', 'border-slate-300');
+        tabAI.classList.remove('bg-violet-600', 'text-white', 'border-violet-200');
+        tabAI.classList.add('bg-white', 'text-slate-600', 'border-slate-300');
+        // Init classic if switching there for first time
+        if (!window._classicInited) { window._classicInited = true; showStep(0); }
+    }
+}
+
+// ==================== AI CHAT MODE ====================
+const aiChatBox = document.getElementById('ai-chat-box');
+const aiChatForm = document.getElementById('ai-chat-form');
+const aiUserInput = document.getElementById('ai-user-input');
+const aiSendBtn = document.getElementById('ai-send-btn');
+const aiProgressBar = document.getElementById('ai-progress-bar');
+const aiStepCounter = document.getElementById('ai-step-counter');
+const aiTotalEl = document.getElementById('ai-total');
+const finishContainer = document.getElementById('finish-container');
+const aiInputArea = document.getElementById('ai-input-area');
+const quickReplies = document.getElementById('quick-replies');
+
+let aiState = { current_index: 0, answers: {}, mode: MODE };
+let isDone = false;
+let totalQs = 0;
+
+// Flat question list from server for answer tracking (used client-side for 10th MCQ)
+{% if mode == '10th' %}
+const serverQuestions = [];
+{% set ns = namespace() %}
+{% for section_id, section in sections.items() %}
+  {% for q in section.questions %}
+serverQuestions.push({ id: "{{ q.id }}", type: "mcq", options: {{ q.options | tojson }} });
+  {% endfor %}
+{% endfor %}
+totalQs = serverQuestions.length;
+{% elif mode == '12th' %}
+const serverQuestions = {{ questions | tojson }}.map(q => ({ id: q.id, type: "open" }));
+totalQs = serverQuestions.length;
+{% else %}
+const serverQuestions = {{ questions | tojson }}.map(q => ({ id: q.id, type: "open" }));
+totalQs = serverQuestions.length;
+{% endif %}
+
+if (aiTotalEl) aiTotalEl.textContent = totalQs;
+
+function appendAIMessage(text, isUser = false) {
+    const div = document.createElement('div');
+    div.className = `flex items-start gap-3 ${isUser ? 'flex-row-reverse' : ''}`;
+    const avatar = isUser
+        ? `<div class="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0 text-base">👤</div>`
+        : `<div class="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0 text-base border border-indigo-200">🎓</div>`;
+    const bubbleClass = isUser
+        ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-sm shadow-md'
+        : 'bg-white text-slate-700 rounded-2xl rounded-tl-sm shadow-sm border border-slate-200';
+    div.innerHTML = `
+        ${avatar}
+        <div class="${bubbleClass} p-4 max-w-[82%]">
+            <div class="prose ${isUser ? 'prose-invert' : 'prose-indigo'} max-w-none text-sm leading-relaxed">
+                ${marked.parse(text)}
+            </div>
+        </div>`;
+    aiChatBox.appendChild(div);
+    aiChatBox.scrollTop = aiChatBox.scrollHeight;
+}
+
+function showTypingDot() {
+    const div = document.createElement('div');
+    div.id = 'typing-dot';
+    div.className = 'flex items-start gap-3';
+    div.innerHTML = `
+        <div class="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0 text-base border border-indigo-200">🎓</div>
+        <div class="bg-white p-4 rounded-2xl rounded-tl-sm shadow-sm border border-slate-200">
+            <div class="flex space-x-1.5">
+                <div class="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></div>
+                <div class="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style="animation-delay:0.2s"></div>
+                <div class="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style="animation-delay:0.4s"></div>
+            </div>
+        </div>`;
+    aiChatBox.appendChild(div);
+    aiChatBox.scrollTop = aiChatBox.scrollHeight;
+}
+
+function removeTypingDot() {
+    const el = document.getElementById('typing-dot');
+    if (el) el.remove();
+}
+
+function updateAIProgress(idx) {
+    const pct = Math.min((idx / totalQs) * 100, 100);
+    aiProgressBar.style.width = pct + '%';
+    aiStepCounter.textContent = Math.min(idx, totalQs);
+}
+
+async function callFinalChat(message) {
+    aiSendBtn.disabled = true;
+    aiUserInput.disabled = true;
+    if (quickReplies) quickReplies.classList.add('hidden');
+    showTypingDot();
     const buddyStatus = document.getElementById('buddy-status');
+    buddyStatus.classList.remove('bg-slate-400');
+    buddyStatus.classList.add('bg-green-400', 'shadow-[0_0_8px_#4ade80]');
 
-    function updateProgress() {
-        const percentage = (currentStep / totalSteps) * 100;
-        progressBar.style.width = percentage + '%';
-        
-        if (currentStep < totalSteps) {
-            currentStepText.innerText = currentStep + 1;
-            totalStepsText.innerText = totalSteps;
+    try {
+        const resp = await fetch('/assessment/final/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                message: message,
+                current_index: aiState.current_index,
+                answers: aiState.answers,
+                mode: MODE
+            })
+        });
+        const data = await resp.json();
+        removeTypingDot();
+        appendAIMessage(data.response, false);
+        aiState.current_index = data.current_index;
+        aiState.answers = data.answers;
+        updateAIProgress(aiState.current_index);
+        isDone = data.done;
+
+        if (isDone) {
+            rebuildHiddenInputs();
+            finishContainer.classList.remove('hidden');
+            aiInputArea.classList.add('hidden');
+            if (quickReplies) quickReplies.classList.add('hidden');
+        } else {
+            if (quickReplies && MODE === '10th') quickReplies.classList.remove('hidden');
+        }
+    } catch (err) {
+        removeTypingDot();
+        appendAIMessage("I'm having trouble connecting. Please refresh and try again.", false);
+    } finally {
+        buddyStatus.classList.remove('bg-green-400', 'shadow-[0_0_8px_#4ade80]');
+        buddyStatus.classList.add('bg-slate-400');
+        aiSendBtn.disabled = false;
+        aiUserInput.disabled = false;
+        aiUserInput.value = '';
+        aiUserInput.focus();
+    }
+}
+
+function sendQuickReply(opt) {
+    if (isDone) return;
+    const qId = serverQuestions[aiState.current_index]?.id;
+    if (qId) aiState.answers[qId] = opt;
+    appendAIMessage(`Option ${opt.toUpperCase()}`, true);
+    callFinalChat(`Option ${opt.toUpperCase()}`);
+}
+
+aiChatForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const msg = aiUserInput.value.trim();
+    if (!msg || isDone) return;
+    const qId = serverQuestions[aiState.current_index]?.id;
+    if (qId) {
+        if (MODE === '10th') {
+            const up = msg.toUpperCase();
+            if (['A','B','C','D'].includes(up)) aiState.answers[qId] = up.toLowerCase();
+            else aiState.answers[qId] = msg;
+        } else {
+            aiState.answers[qId] = msg;
         }
     }
+    appendAIMessage(msg, true);
+    callFinalChat(msg);
+});
 
-    function showStep(index) {
-        steps.forEach(step => step.classList.add('hidden'));
-
-        if (index >= totalSteps) {
-            document.getElementById('submit-section').classList.remove('hidden');
-            progressBar.style.width = '100%';
-            currentStepText.parentElement.innerText = "Completed";
-            return;
-        }
-
-        steps[index].classList.remove('hidden');
-        currentStep = index;
-        updateProgress();
-        
-        // Cancel any previous speech when moving to new question
-        window.speechSynthesis.cancel();
+function rebuildHiddenInputs() {
+    const container = document.getElementById('hidden-answers-container');
+    container.innerHTML = '';
+    for (const [key, value] of Object.entries(aiState.answers)) {
+        const inp = document.createElement('input');
+        inp.type = 'hidden'; inp.name = key; inp.value = value;
+        container.appendChild(inp);
     }
+}
 
-    function handleSelection(input) {
-        setTimeout(() => {
-            nextStep();
-        }, 400);
+document.getElementById('ai-submit-form').addEventListener('submit', function() {
+    rebuildHiddenInputs();
+    document.getElementById('finish-btn-text').textContent = 'Analyzing Results...';
+    document.getElementById('finish-spinner').classList.remove('hidden');
+    document.getElementById('loading-text-ai').classList.remove('hidden');
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    updateAIProgress(0);
+    callFinalChat('');
+});
+
+// ==================== CLASSIC MODE ====================
+let currentStep = 0;
+const steps = document.querySelectorAll('.question-step');
+const totalSteps = steps.length;
+const progressBar = document.getElementById('progress-bar');
+const currentStepText = document.getElementById('current-step-text');
+const totalStepsText = document.getElementById('total-steps-text');
+
+function updateProgress() {
+    const percentage = (currentStep / totalSteps) * 100;
+    progressBar.style.width = percentage + '%';
+    if (currentStep < totalSteps) {
+        currentStepText.innerText = currentStep + 1;
+        totalStepsText.innerText = totalSteps;
     }
+}
 
-    function nextStep() {
-        // Basic validation for textareas
-        const currentStepEl = steps[currentStep];
-        const textarea = currentStepEl.querySelector('textarea');
-        if (textarea && !textarea.value.trim()) {
-            textarea.classList.add('border-red-500', 'shake');
-            setTimeout(() => textarea.classList.remove('shake'), 500);
-            return;
-        }
-
-        showStep(currentStep + 1);
+function showStep(index) {
+    steps.forEach(step => step.classList.add('hidden'));
+    if (index >= totalSteps) {
+        document.getElementById('submit-section').classList.remove('hidden');
+        progressBar.style.width = '100%';
+        currentStepText.parentElement.innerText = "Completed";
+        return;
     }
+    steps[index].classList.remove('hidden');
+    currentStep = index;
+    updateProgress();
+    window.speechSynthesis.cancel();
+}
 
-    function prevStep() {
-        if (currentStep > 0) {
-            showStep(currentStep - 1);
-        }
+function handleSelection(input) {
+    setTimeout(() => { nextStep(); }, 400);
+}
+
+function nextStep() {
+    const currentStepEl = steps[currentStep];
+    const textarea = currentStepEl.querySelector('textarea');
+    if (textarea && !textarea.value.trim()) {
+        textarea.classList.add('border-red-500');
+        setTimeout(() => textarea.classList.remove('border-red-500'), 500);
+        return;
     }
+    showStep(currentStep + 1);
+}
 
-    function getBestVoice() {
-        const voices = window.speechSynthesis.getVoices();
-        // Priority: Indian English (en-IN) versions first
-        return voices.find(v => v.lang === 'en-IN') ||
-               voices.find(v => v.name.includes('India') || v.name.includes('Indian')) ||
-               voices.find(v => v.lang.startsWith('en')) ||
-               voices[0];
+function prevStep() {
+    if (currentStep > 0) showStep(currentStep - 1);
+}
+
+function getBestVoice() {
+    const voices = window.speechSynthesis.getVoices();
+    return voices.find(v => v.lang === 'en-IN') ||
+           voices.find(v => v.name.includes('India') || v.name.includes('Indian')) ||
+           voices.find(v => v.lang.startsWith('en')) || voices[0];
+}
+
+function speakCurrentQuestion() {
+    window.speechSynthesis.cancel();
+    const currentQuestion = steps[currentStep]?.querySelector('.question-title')?.innerText;
+    const currentText = steps[currentStep]?.querySelector('p.italic')?.innerText;
+    if (currentQuestion) {
+        let textToSpeak = currentQuestion;
+        if (currentText) textToSpeak += ". . . " + currentText;
+        const utterance = new SpeechSynthesisUtterance(textToSpeak);
+        utterance.voice = getBestVoice(); utterance.rate = 1.0; utterance.pitch = 1.1;
+        window.speechSynthesis.speak(utterance);
     }
+}
 
-    function speakCurrentQuestion() {
-        window.speechSynthesis.cancel();
-        const currentQuestion = steps[currentStep]?.querySelector('.question-title')?.innerText;
-        const currentText = steps[currentStep]?.querySelector('p.italic')?.innerText;
-        
-        if (currentQuestion) {
-            let textToSpeak = currentQuestion;
-            if (currentText) textToSpeak += ". . . " + currentText;
-            
-            const utterance = new SpeechSynthesisUtterance(textToSpeak);
-            utterance.voice = getBestVoice();
-            utterance.rate = 1.0;
-            utterance.pitch = 1.1;
+window.speechSynthesis.onvoiceschanged = () => getBestVoice();
 
-            utterance.onstart = () => {
-                talkingBuddy.classList.add('buddy-talking');
-                buddyStatus.classList.remove('bg-slate-400');
-                buddyStatus.classList.add('bg-green-400', 'shadow-[0_0_8px_#4ade80]');
-            };
+function toggleSpeech(questionId) {
+    if (!('webkitSpeechRecognition' in window)) { alert("Speech recognition not supported. Please use Chrome."); return; }
+    const btn = document.getElementById(`btn-${questionId}`);
+    const status = document.getElementById(`status-${questionId}`);
+    const textarea = document.getElementById(questionId);
+    if (btn.classList.contains('listening')) { if (window.recognition) window.recognition.stop(); return; }
+    const recognition = new webkitSpeechRecognition();
+    window.recognition = recognition;
+    recognition.continuous = false; recognition.interimResults = false; recognition.lang = 'en-US';
+    recognition.onstart = function() { btn.classList.add('listening'); btn.classList.add('bg-red-50', 'text-red-600', 'border-red-200'); btn.innerHTML = '⏹️'; status.classList.remove('hidden'); };
+    recognition.onresult = function(event) { const transcript = event.results[0][0].transcript; textarea.value = (textarea.value ? textarea.value + " " : "") + transcript; };
+    recognition.onerror = () => resetUI(questionId);
+    recognition.onend = () => resetUI(questionId);
+    recognition.start();
+}
 
-            utterance.onend = () => {
-                talkingBuddy.classList.remove('buddy-talking');
-                buddyStatus.classList.remove('bg-green-400', 'shadow-[0_0_8px_#4ade80]');
-                buddyStatus.classList.add('bg-slate-400');
-            };
+function resetUI(questionId) {
+    const btn = document.getElementById(`btn-${questionId}`);
+    const status = document.getElementById(`status-${questionId}`);
+    btn.classList.remove('listening', 'bg-red-50', 'text-red-600', 'border-red-200');
+    btn.classList.add('bg-white'); btn.innerHTML = '🎤'; status.classList.add('hidden');
+}
 
-            window.speechSynthesis.speak(utterance);
-        }
-    }
-
-    // Refresh voices on load
-    window.speechSynthesis.onvoiceschanged = () => getBestVoice();
-
-    // Speech Recognition (STT) for 12th/Above
-    function toggleSpeech(questionId) {
-        if (!('webkitSpeechRecognition' in window)) {
-            alert("Speech recognition is not supported in this browser. Please use Chrome.");
-            return;
-        }
-
-        const btn = document.getElementById(`btn-${questionId}`);
-        const status = document.getElementById(`status-${questionId}`);
-        const textarea = document.getElementById(questionId);
-
-        if (btn.classList.contains('listening')) {
-            if (window.recognition) window.recognition.stop();
-            return;
-        }
-
-        const recognition = new webkitSpeechRecognition();
-        window.recognition = recognition;
-        recognition.continuous = false;
-        recognition.interimResults = false;
-        recognition.lang = 'en-US';
-
-        recognition.onstart = function () {
-            btn.classList.add('listening');
-            btn.classList.remove('bg-white');
-            btn.classList.add('bg-red-50', 'text-red-600', 'border-red-200');
-            btn.innerHTML = '⏹️';
-            status.classList.remove('hidden');
-        };
-
-        recognition.onresult = function (event) {
-            const transcript = event.results[0][0].transcript;
-            textarea.value = (textarea.value ? textarea.value + " " : "") + transcript;
-        };
-
-        recognition.onerror = () => resetUI(questionId);
-        recognition.onend = () => resetUI(questionId);
-        recognition.start();
-    }
-
-    function resetUI(questionId) {
-        const btn = document.getElementById(`btn-${questionId}`);
-        const status = document.getElementById(`status-${questionId}`);
-        btn.classList.remove('listening', 'bg-red-50', 'text-red-600', 'border-red-200');
-        btn.classList.add('bg-white');
-        btn.innerHTML = '🎤';
-        status.classList.add('hidden');
-    }
-
-    // Form submission UI
-    document.getElementById('assessment-form').addEventListener('submit', function() {
-        const btn = document.getElementById('submit-btn');
-        const btnText = document.getElementById('btn-text');
-        const spinner = document.getElementById('btn-spinner');
-        const loadingText = document.getElementById('loading-text');
-
-        btn.disabled = true;
-        btn.classList.add('opacity-75', 'cursor-not-allowed');
-        btnText.innerText = 'Analyzing Results...';
-        spinner.classList.remove('hidden');
-        loadingText.classList.remove('hidden');
-    });
-
-    // Init first step
-    document.addEventListener('DOMContentLoaded', () => {
-        showStep(0);
-    });
+document.getElementById('assessment-form').addEventListener('submit', function() {
+    const btn = document.getElementById('submit-btn');
+    document.getElementById('btn-text').innerText = 'Analyzing Results...';
+    document.getElementById('btn-spinner').classList.remove('hidden');
+    document.getElementById('loading-text').classList.remove('hidden');
+    btn.disabled = true; btn.classList.add('opacity-75', 'cursor-not-allowed');
+});
 </script>
-
-<!-- Removed Omnidimension Voice Agent Widget -->
 {% endblock %}

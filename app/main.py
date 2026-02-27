@@ -614,6 +614,129 @@ async def assessment_phase3_submit(
     return RedirectResponse(url="/assessment/result", status_code=status.HTTP_302_FOUND)
 
 
+# --- Phase 3 AI Chat Endpoint ---
+
+class Phase3ChatRequest(BaseModel):
+    message: str
+    current_index: int = 0
+    answers: dict = {}
+
+COUNSELLOR_SYSTEM_PROMPT = """
+You are an empathetic, professional career counsellor conducting a personality assessment.
+Your role is to present scenario questions warmly and professionally.
+- Keep your response concise (3-5 sentences max).
+- When presenting a scenario, clearly state the two options (Option A and Option B) on separate lines.
+- After the user selects an option, briefly acknowledge their choice with an encouraging sentence, then say you're moving to the next scenario.
+- Do NOT make up new questions. Only work with the scenario data you are given.
+"""
+
+@app.post("/assessment/phase3/chat")
+async def phase3_chat(request: Request, chat_req: Phase3ChatRequest, db: Session = Depends(get_db)):
+    user = get_current_user(request, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    result = db.query(models.AssessmentResult).filter(models.AssessmentResult.user_id == user.id).first()
+    if not result or not result.phase_2_category:
+        return jsonify({"error": "No phase 2 category found"})
+    
+    from fastapi.responses import JSONResponse
+    category = result.phase_2_category
+    question_list = CATEGORY_SCENARIOS_MAP.get(category, [])
+    total = len(question_list)
+    current_idx = chat_req.current_index
+
+    # All done
+    if current_idx >= total:
+        return JSONResponse({
+            "response": "Thank you for completing all the scenarios! Click **Finish Assessment** below to generate your personalised profile.",
+            "current_index": current_idx,
+            "answers": chat_req.answers,
+            "done": True
+        })
+
+    current_scenario = question_list[current_idx]
+
+    # Build the prompt
+    scenario_text = f"""
+Scenario {current_idx + 1} of {total}:
+Title: {current_scenario['title']}
+Story: {current_scenario['story']}
+Option A: {current_scenario['options'][0]['text']}
+Option B: {current_scenario['options'][1]['text']}
+"""
+
+    if chat_req.message and chat_req.message.strip():
+        # User replied to previous question — acknowledge and show next
+        next_idx = current_idx + 1
+        if next_idx >= total:
+            prompt = f"""{COUNSELLOR_SYSTEM_PROMPT}
+
+The user just answered the previous scenario. Their reply was: "{chat_req.message}"
+Acknowledge their answer warmly in 1-2 sentences, then let them know they have completed all scenarios and should click Finish."""
+            new_idx = next_idx
+            done = True
+        else:
+            next_scenario = question_list[next_idx]
+            next_scenario_text = f"""
+Scenario {next_idx + 1} of {total}:
+Title: {next_scenario['title']}
+Story: {next_scenario['story']}
+Option A: {next_scenario['options'][0]['text']}
+Option B: {next_scenario['options'][1]['text']}
+"""
+            prompt = f"""{COUNSELLOR_SYSTEM_PROMPT}
+
+The user just answered the previous scenario. Their reply was: "{chat_req.message}"
+Acknowledge their answer warmly in 1 sentence, then present the next scenario below.
+
+{next_scenario_text}
+
+Present the scenario story first, then clearly list Option A and Option B on separate lines."""
+            new_idx = next_idx
+            done = False
+    else:
+        # Initial load — present first scenario
+        prompt = f"""{COUNSELLOR_SYSTEM_PROMPT}
+
+Welcome the user warmly (1 sentence), then present this scenario:
+
+{scenario_text}
+
+Present the scenario story first, then clearly list Option A and Option B on separate lines."""
+        new_idx = current_idx
+        done = False
+
+    # Call Gemini (with Groq fallback)
+    try:
+        if GEMINI_API_KEY:
+            try:
+                model_ai = genai.GenerativeModel("gemini-2.0-flash")
+                response = await model_ai.generate_content_async(prompt)
+                ai_text = response.text
+            except Exception:
+                model_ai = genai.GenerativeModel("gemini-1.5-flash-latest")
+                response = await model_ai.generate_content_async(prompt)
+                ai_text = response.text
+        elif groq_client:
+            completion = await groq_client.chat.completions.create(
+                messages=[{"role": "user", "content": prompt}],
+                model="llama-3.3-70b-versatile",
+            )
+            ai_text = completion.choices[0].message.content
+        else:
+            ai_text = f"[Demo Mode] {scenario_text}"
+    except Exception as e:
+        ai_text = f"I'm having a moment of reflection. ({str(e)}) Please try again."
+
+    return JSONResponse({
+        "response": ai_text,
+        "current_index": new_idx,
+        "answers": chat_req.answers,
+        "done": done
+    })
+
+
 # --- Phase 4 Routes (Final Stream Assessment) ---
 
 from data.questions_final import all_questions, section_a_questions, section_b_questions, section_c_questions, section_d_questions
@@ -896,6 +1019,151 @@ async def assessment_final_submit(request: Request, db: Session = Depends(get_db
         db.commit()
 
     return RedirectResponse(url="/assessment/result", status_code=status.HTTP_302_FOUND)
+
+
+# --- Final Phase AI Chat Endpoint ---
+
+class FinalChatRequest(BaseModel):
+    message: str
+    current_index: int = 0
+    answers: dict = {}
+    mode: str = "10th"
+
+FINAL_COUNSELLOR_PROMPT = """
+You are a warm and insightful AI career counsellor conducting a final career assessment.
+Your tone is encouraging, curious, and professional.
+- Keep responses concise (3-5 sentences).
+- For Multiple Choice questions (10th mode), present the question then list ALL options clearly (A, B, C, D or as given).
+- For open-ended scenarios (12th / above mode), present the scenario warmly, then invite the student to share their thoughts.
+- After the student replies, give a brief, encouraging acknowledgement (1 sentence) before presenting the next question.
+- Never make up questions. Only use the question data provided to you.
+"""
+
+@app.post("/assessment/final/chat")
+async def final_chat(request: Request, chat_req: FinalChatRequest, db: Session = Depends(get_db)):
+    user = get_current_user(request, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    from fastapi.responses import JSONResponse
+    mode = chat_req.mode
+    current_idx = chat_req.current_index
+
+    # Build flat question list based on mode
+    if mode == "10th":
+        flat_questions = []
+        for section_id, section_data in all_questions.items():
+            for q in section_data["questions"]:
+                flat_questions.append({
+                    "id": q["id"],
+                    "title": q["question"],
+                    "options": [{"value": o["value"], "text": o["text"]} for o in q["options"]],
+                    "section": section_data["title"],
+                    "type": "mcq"
+                })
+    elif mode == "12th":
+        flat_questions = [
+            {"id": q["id"], "title": q["title"], "text": q["text"], "insight": q["insight"], "type": "open"}
+            for q in questions_12th
+        ]
+    else:  # above
+        flat_questions = [
+            {"id": q["id"], "title": q["title"], "text": q["text"], "insight": q["insight"], "type": "open"}
+            for q in questions_above_12th
+        ]
+
+    total = len(flat_questions)
+
+    # All done
+    if current_idx >= total:
+        return JSONResponse({
+            "response": "Wonderful! You've answered all the questions. Click **Get My Career Path** to generate your personalised AI career insights! 🎯",
+            "current_index": current_idx,
+            "answers": chat_req.answers,
+            "done": True
+        })
+
+    # Format current question for the prompt
+    q = flat_questions[current_idx]
+    if q["type"] == "mcq":
+        options_text = "\n".join([f"  Option {o['value'].upper()}: {o['text']}" for o in q["options"]])
+        current_q_text = f"""Question {current_idx + 1} of {total} [{q['section']}]:
+{q['title']}
+{options_text}"""
+    else:
+        current_q_text = f"""Question {current_idx + 1} of {total}:
+Title: {q['title']}
+Scenario: {q['text']}
+(Focus: {q['insight']})"""
+
+    if chat_req.message and chat_req.message.strip():
+        # User replied — move to next
+        next_idx = current_idx + 1
+        if next_idx >= total:
+            prompt = f"""{FINAL_COUNSELLOR_PROMPT}
+
+The student just answered a question. Their response: "{chat_req.message}"
+Give a warm 1-sentence acknowledgement, then tell them they've completed all questions and should click the button to get their results."""
+            new_idx = next_idx
+            done = True
+        else:
+            next_q = flat_questions[next_idx]
+            if next_q["type"] == "mcq":
+                next_opts = "\n".join([f"  Option {o['value'].upper()}: {o['text']}" for o in next_q["options"]])
+                next_q_text = f"""Question {next_idx + 1} of {total} [{next_q['section']}]:
+{next_q['title']}
+{next_opts}"""
+            else:
+                next_q_text = f"""Question {next_idx + 1} of {total}:
+Title: {next_q['title']}
+Scenario: {next_q['text']}
+(Focus: {next_q['insight']})"""
+            prompt = f"""{FINAL_COUNSELLOR_PROMPT}
+
+The student just answered the previous question. Their response: "{chat_req.message}"
+Acknowledge in 1 warm sentence, then present the next question:
+
+{next_q_text}"""
+            new_idx = next_idx
+            done = False
+    else:
+        # First load — present first question
+        prompt = f"""{FINAL_COUNSELLOR_PROMPT}
+
+Welcome the student warmly (1 sentence), then present this first question:
+
+{current_q_text}"""
+        new_idx = current_idx
+        done = False
+
+    # Call Gemini with Groq fallback
+    try:
+        if GEMINI_API_KEY:
+            try:
+                model_ai = genai.GenerativeModel("gemini-2.0-flash")
+                response = await model_ai.generate_content_async(prompt)
+                ai_text = response.text
+            except Exception:
+                model_ai = genai.GenerativeModel("gemini-1.5-flash-latest")
+                response = await model_ai.generate_content_async(prompt)
+                ai_text = response.text
+        elif groq_client:
+            completion = await groq_client.chat.completions.create(
+                messages=[{"role": "user", "content": prompt}],
+                model="llama-3.3-70b-versatile",
+            )
+            ai_text = completion.choices[0].message.content
+        else:
+            ai_text = f"[Demo Mode] {current_q_text}"
+    except Exception as e:
+        ai_text = f"I seem to be in deep thought right now. ({str(e)}) Please try again."
+
+    return JSONResponse({
+        "response": ai_text,
+        "current_index": new_idx,
+        "answers": chat_req.answers,
+        "done": done
+    })
 
 
 # --- Chatbot Routes ---
