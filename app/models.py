@@ -74,3 +74,32 @@ class Feedback(Base):
 User.messages = relationship("ChatMessage", back_populates="user", order_by="ChatMessage.timestamp")
 User.feedbacks = relationship("Feedback", back_populates="user", order_by="Feedback.timestamp")
 
+class CounsellorProfile(Base):
+    __tablename__ = "counsellor_profiles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    fee = Column(Float, default=0.0)
+    # Storing availability as JSON. E.g., {"Monday": ["10:00", "11:00"], "Tuesday": []}
+    availability = Column(JSON, nullable=True)
+
+    user = relationship("User", back_populates="counsellor_profile")
+
+class Appointment(Base):
+    __tablename__ = "appointments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    student_id = Column(Integer, ForeignKey("users.id"))
+    counsellor_id = Column(Integer, ForeignKey("users.id"))
+    appointment_time = Column(DateTime)
+    status = Column(String, default="scheduled")  # scheduled, completed, cancelled
+    payment_status = Column(String, default="pending")  # pending, paid
+    meeting_link = Column(String, nullable=True)
+
+    student = relationship("User", foreign_keys=[student_id], back_populates="student_appointments")
+    counsellor = relationship("User", foreign_keys=[counsellor_id], back_populates="counsellor_appointments")
+
+User.counsellor_profile = relationship("CounsellorProfile", back_populates="user", uselist=False)
+User.student_appointments = relationship("Appointment", foreign_keys="[Appointment.student_id]", back_populates="student")
+User.counsellor_appointments = relationship("Appointment", foreign_keys="[Appointment.counsellor_id]", back_populates="counsellor")
+

@@ -1,186 +1,572 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NextStep | Find Your Future</title>
+<title>NextStep | AI Career Counselling Platform</title>
+<meta name="description" content="AI-powered career clarity for students and a management platform for top counsellors.">
 
-<script src="/static/css/tailwind.cdn.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<!-- Animation Library (AOS) -->
+<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+
+<!-- Alpine.js for Interactivity -->
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+<script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                fontFamily: {
+                    sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    display: ['"Outfit"', 'sans-serif'],
+                },
+                colors: {
+                    brand: {
+                        50: '#eff6ff',
+                        100: '#dbeafe',
+                        500: '#3b82f6',
+                        600: '#2563eb',
+                        900: '#1e3a8a',
+                    },
+                    accent: {
+                        400: '#a78bfa',
+                        500: '#8b5cf6',
+                    }
+                },
+                animation: {
+                    'blob': 'blob 7s infinite',
+                    'float': 'float 6s ease-in-out infinite',
+                    'scroll': 'scroll 20s linear infinite',
+                },
+                keyframes: {
+                    blob: {
+                        '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                        '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+                        '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+                        '100%': { transform: 'translate(0px, 0px) scale(1)' },
+                    },
+                    float: {
+                        '0%, 100%': { transform: 'translateY(0)' },
+                        '50%': { transform: 'translateY(-20px)' },
+                    },
+                    scroll: {
+                        '0%': { transform: 'translateX(0)' },
+                        '100%': { transform: 'translateX(-100%)' },
+                    }
+                }
+            }
+        }
+    }
+</script>
 
 <style>
-body {
-    font-family: 'Inter', sans-serif;
-    background: #0F172A;
-    color: #E2E8F0;
-    overflow-x: hidden;
-}
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
 
-.hero-bg {
-    background: radial-gradient(circle at 20% 30%, rgba(99,102,241,0.25), transparent 40%),
-                radial-gradient(circle at 80% 70%, rgba(244,114,182,0.2), transparent 40%);
-}
+    /* Glassmorphism Utilities */
+    .glass {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    
+    .glass-strong {
+        background: rgba(15, 23, 42, 0.7);
+        backdrop-filter: blur(20px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
 
-.btn-main {
-    background: linear-gradient(135deg, #6366F1, #22D3EE);
-    transition: all 0.3s ease;
-}
+    .text-gradient {
+        background: linear-gradient(to right, #60a5fa, #a78bfa, #f472b6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
 
-.btn-main:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 15px 30px rgba(99,102,241,0.4);
-}
-
-.card-hover {
-    transition: all 0.3s ease;
-}
-
-.card-hover:hover {
-    transform: translateY(-8px);
-    background: rgba(255,255,255,0.05);
-}
-
-.floating {
-    animation: float 6s ease-in-out infinite;
-}
-
-@keyframes float {
-    0%,100% { transform: translateY(0); }
-    50% { transform: translateY(-15px); }
-}
+    /* Grid Background */
+    .bg-grid {
+        background-size: 40px 40px;
+        background-image: linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                          linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    }
 </style>
 </head>
 
-<body>
+<body class="bg-[#0F172A] text-slate-200 overflow-x-hidden selection:bg-indigo-500 selection:text-white">
 
-<!-- NAV -->
-<nav class="fixed w-full bg-[#0F172A]/80 backdrop-blur border-b border-white/10 z-50">
-  <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-    <div class="text-2xl font-bold text-white">NextStep</div>
-    <a href="/signup" class="btn-main px-6 py-2 rounded-xl text-white font-semibold">
-      Start Free
-    </a>
-  </div>
+<!-- NAVIGATION -->
+<nav x-data="{ mobileMenu: false, scrolled: false }" 
+     @scroll.window="scrolled = (window.pageYOffset > 20)"
+     :class="scrolled ? 'glass-strong py-4' : 'bg-transparent py-6'"
+     class="fixed w-full top-0 z-50 transition-all duration-300">
+    <div class="max-w-7xl mx-auto px-6 flex justify-between items-center">
+        <!-- Logo -->
+        <a href="#" class="flex items-center gap-2 group">
+            <div class="w-10 h-10 bg-gradient-to-tr from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-blue-500/20 group-hover:scale-105 transition">N</div>
+            <span class="text-2xl font-display font-bold text-white tracking-tight">NextStep</span>
+        </a>
+
+        <!-- Desktop Menu -->
+        <div class="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-300">
+            <a href="#students" class="hover:text-white transition">For Students</a>
+            <a href="#counsellors" class="hover:text-white transition">For Counsellors</a>
+            <a href="#how-it-works" class="hover:text-white transition">How it Works</a>
+            <div class="h-4 w-px bg-white/10"></div>
+            <a href="/login" class="hover:text-white transition">Log In</a>
+            <a href="/signup" class="bg-white text-slate-900 px-5 py-2.5 rounded-full hover:bg-blue-50 transition shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:shadow-[0_0_25px_rgba(255,255,255,0.5)]">
+                Get Started
+            </a>
+        </div>
+
+        <!-- Mobile Toggle -->
+        <button @click="mobileMenu = !mobileMenu" class="md:hidden text-2xl text-white">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+    </div>
+
+    <!-- Mobile Menu Dropdown -->
+    <div x-show="mobileMenu" 
+         x-transition 
+         class="md:hidden absolute top-full left-0 w-full bg-[#0F172A] border-b border-white/10 p-6 flex flex-col gap-4 shadow-2xl">
+        <a href="#students" class="text-lg font-medium">For Students</a>
+        <a href="#counsellors" class="text-lg font-medium">For Counsellors</a>
+        <a href="/login" class="text-lg font-medium text-blue-400">Log In</a>
+        <a href="/signup" class="bg-blue-600 text-center py-3 rounded-xl font-bold text-white">Get Started Free</a>
+    </div>
 </nav>
 
-<!-- HERO -->
-<section class="hero-bg pt-40 pb-32 px-6">
-  <div class="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
-
-    <div>
-      <h1 class="text-5xl md:text-6xl font-extrabold leading-tight mb-8">
-        Not Sure What To Do After 10th or 12th?
-        <br>
-        <span class="text-indigo-400">Let AI Figure It Out With You.</span>
-      </h1>
-
-      <p class="text-lg text-gray-400 mb-10">
-        Take smart assessments. Discover your strengths. Get a real roadmap.
-        No pressure. No random advice. Just clarity.
-      </p>
-
-      <div class="flex gap-6">
-        <a href="/signup" class="btn-main px-8 py-4 rounded-2xl text-white font-bold">
-          Take Assessment
-        </a>
-        <a href="#how" class="px-8 py-4 border border-white/20 rounded-2xl hover:bg-white/5">
-          How It Works
-        </a>
-      </div>
+<!-- HERO SECTION -->
+<section class="relative pt-40 pb-20 lg:pt-52 lg:pb-32 px-6 overflow-hidden">
+    <!-- Animated Background Blobs -->
+    <div class="absolute top-0 left-0 w-full h-full overflow-hidden -z-10">
+        <div class="absolute top-0 left-1/4 w-96 h-96 bg-blue-600/20 rounded-full mix-blend-screen filter blur-3xl opacity-30 animate-blob"></div>
+        <div class="absolute top-0 right-1/4 w-96 h-96 bg-purple-600/20 rounded-full mix-blend-screen filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+        <div class="absolute -bottom-32 left-1/3 w-96 h-96 bg-pink-600/20 rounded-full mix-blend-screen filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
+        <div class="absolute inset-0 bg-grid opacity-20"></div>
     </div>
 
-    <div class="relative">
-      <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&q=80&w=1200"
-           class="rounded-3xl shadow-2xl floating"
-           alt="Students working together">
-    </div>
+    <div class="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
+        <!-- Content -->
+        <div data-aos="fade-right" data-aos-duration="1000">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-semibold text-blue-300 mb-6 backdrop-blur-sm">
+                <span class="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
+                AI-Powered Career Discovery
+            </div>
+            
+            <h1 class="font-display text-5xl md:text-7xl font-bold leading-[1.1] mb-6 tracking-tight text-white">
+                Find the Future <br>
+                <span class="text-gradient">You Actually Want.</span>
+            </h1>
+            
+            <p class="text-lg text-slate-400 mb-8 max-w-lg leading-relaxed">
+                Stop guessing. NextStep combines advanced psychometrics with expert human counselling to map your perfect career path.
+            </p>
 
-  </div>
+            <div class="flex flex-col sm:flex-row gap-4">
+                <a href="#students" class="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl text-white font-bold shadow-lg shadow-blue-500/25 hover:scale-105 transition flex items-center justify-center gap-2">
+                    I'm a Student
+                    <i class="fa-solid fa-arrow-right"></i>
+                </a>
+                <a href="#counsellors" class="px-8 py-4 glass text-white font-bold rounded-2xl hover:bg-white/10 transition flex items-center justify-center gap-2">
+                    I'm a Counsellor
+                </a>
+            </div>
+
+            <div class="mt-10 flex items-center gap-4 text-sm text-slate-500 font-medium">
+                <div class="flex -space-x-3">
+                    <img src="https://i.pravatar.cc/100?img=1" class="w-10 h-10 rounded-full border-2 border-[#0F172A]" alt="">
+                    <img src="https://i.pravatar.cc/100?img=5" class="w-10 h-10 rounded-full border-2 border-[#0F172A]" alt="">
+                    <img src="https://i.pravatar.cc/100?img=8" class="w-10 h-10 rounded-full border-2 border-[#0F172A]" alt="">
+                </div>
+                <p>Join 10,000+ students today</p>
+            </div>
+        </div>
+
+        <!-- Hero Image/Graphic -->
+        <div class="relative hidden lg:block" data-aos="fade-left" data-aos-duration="1000">
+            <div class="absolute inset-0 bg-gradient-to-tr from-blue-500 to-purple-500 rounded-full blur-[100px] opacity-20"></div>
+            
+            <!-- Dashboard Mockup Card -->
+            <div class="relative z-10 glass rounded-3xl p-4 animate-float border border-white/10 shadow-2xl">
+                <img src="https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&q=80&w=1000" 
+                     alt="Career Dashboard" 
+                     class="rounded-2xl w-full object-cover h-[400px]">
+                
+                <!-- Floating Elements -->
+                <div class="absolute -left-8 top-10 glass p-4 rounded-2xl flex items-center gap-3 shadow-xl animate-bounce" style="animation-duration: 3s;">
+                    <div class="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center text-green-400">
+                        <i class="fa-solid fa-check"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-400">Match Found</p>
+                        <p class="text-sm font-bold text-white">Software Architect</p>
+                    </div>
+                </div>
+
+                <div class="absolute -right-6 bottom-10 glass p-4 rounded-2xl shadow-xl animate-bounce" style="animation-duration: 4s;">
+                    <div class="flex items-center gap-2 mb-1">
+                        <div class="w-2 h-2 rounded-full bg-red-500"></div>
+                        <p class="text-xs text-slate-400">Live Session</p>
+                    </div>
+                    <p class="text-sm font-bold text-white">Dr. Sarah Jenkins</p>
+                    <p class="text-xs text-slate-400">Career Psychologist</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- LOGO MARQUEE -->
+<section class="border-y border-white/5 bg-white/[0.02] py-10 overflow-hidden">
+    <div class="max-w-7xl mx-auto px-6 mb-4 text-center">
+        <p class="text-sm font-semibold text-slate-500 uppercase tracking-widest">Trusted by students from top institutions</p>
+    </div>
+    <div class="relative flex overflow-x-hidden">
+        <div class="animate-scroll py-4 whitespace-nowrap flex items-center gap-16 px-8">
+            <!-- Logos repeated twice for seamless loop -->
+            <span class="text-2xl font-bold text-slate-600 flex items-center gap-2"><i class="fa-solid fa-building-columns"></i> HARVARD</span>
+            <span class="text-2xl font-bold text-slate-600 flex items-center gap-2"><i class="fa-solid fa-graduation-cap"></i> STANFORD</span>
+            <span class="text-2xl font-bold text-slate-600 flex items-center gap-2"><i class="fa-solid fa-university"></i> MIT</span>
+            <span class="text-2xl font-bold text-slate-600 flex items-center gap-2"><i class="fa-solid fa-school"></i> OXFORD</span>
+            <span class="text-2xl font-bold text-slate-600 flex items-center gap-2"><i class="fa-solid fa-atom"></i> CALTECH</span>
+            <span class="text-2xl font-bold text-slate-600 flex items-center gap-2"><i class="fa-solid fa-building-columns"></i> HARVARD</span>
+            <span class="text-2xl font-bold text-slate-600 flex items-center gap-2"><i class="fa-solid fa-graduation-cap"></i> STANFORD</span>
+            <span class="text-2xl font-bold text-slate-600 flex items-center gap-2"><i class="fa-solid fa-university"></i> MIT</span>
+            <span class="text-2xl font-bold text-slate-600 flex items-center gap-2"><i class="fa-solid fa-school"></i> OXFORD</span>
+            <span class="text-2xl font-bold text-slate-600 flex items-center gap-2"><i class="fa-solid fa-atom"></i> CALTECH</span>
+        </div>
+    </div>
+</section>
+
+<!-- STUDENT SECTION (BENTO GRID) -->
+<section id="students" class="py-24 px-6 relative">
+    <div class="max-w-7xl mx-auto">
+        <div class="text-center mb-16" data-aos="fade-up">
+            <h2 class="text-3xl md:text-5xl font-display font-bold mb-4">Master Your <span class="text-blue-500">Path</span></h2>
+            <p class="text-slate-400 max-w-2xl mx-auto">Our AI analyzes 50+ data points about your personality, aptitude, and interests to recommend the perfect career trajectory.</p>
+        </div>
+
+        <div class="grid md:grid-cols-4 md:grid-rows-2 gap-6 h-auto md:h-[600px]">
+            
+            <!-- Bento Item 1: Large Left -->
+            <div class="md:col-span-2 md:row-span-2 glass rounded-3xl p-8 relative overflow-hidden group hover:border-blue-500/30 transition duration-300" data-aos="fade-up" data-aos-delay="0">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                <div class="relative z-10 h-full flex flex-col justify-between">
+                    <div>
+                        <div class="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center text-blue-400 text-xl mb-4">
+                            <i class="fa-solid fa-brain"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-white mb-2">Psychometric AI</h3>
+                        <p class="text-slate-400">Not just a quiz. A deep dive into your cognitive patterns and emotional intelligence.</p>
+                    </div>
+                    <img src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=600" class="mt-6 rounded-2xl opacity-60 group-hover:opacity-100 transition duration-500 shadow-lg w-full h-48 object-cover" alt="Test interface">
+                </div>
+            </div>
+
+            <!-- Bento Item 2: Top Right -->
+            <div class="md:col-span-2 glass rounded-3xl p-8 flex items-center gap-6 group hover:border-purple-500/30 transition duration-300" data-aos="fade-up" data-aos-delay="100">
+                <div class="flex-1">
+                    <h3 class="text-xl font-bold text-white mb-2">Video Counselling</h3>
+                    <p class="text-sm text-slate-400">Book 1-on-1 sessions with industry experts instantly.</p>
+                </div>
+                <div class="w-16 h-16 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white text-2xl shadow-lg group-hover:scale-110 transition">
+                    <i class="fa-solid fa-video"></i>
+                </div>
+            </div>
+
+            <!-- Bento Item 3: Bottom Middle -->
+            <div class="md:col-span-1 glass rounded-3xl p-6 hover:bg-white/5 transition duration-300" data-aos="fade-up" data-aos-delay="200">
+                <div class="text-4xl font-bold text-white mb-1">98%</div>
+                <p class="text-xs text-slate-400 uppercase font-bold tracking-wider mb-4">Accuracy Rate</p>
+                <div class="w-full bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                    <div class="bg-green-400 h-full w-[98%]"></div>
+                </div>
+            </div>
+
+            <!-- Bento Item 4: Bottom Right -->
+            <div class="md:col-span-1 glass rounded-3xl p-6 hover:bg-white/5 transition duration-300 flex flex-col justify-center" data-aos="fade-up" data-aos-delay="300">
+                <div class="w-10 h-10 bg-orange-500/20 rounded-lg flex items-center justify-center text-orange-400 mb-3">
+                    <i class="fa-solid fa-file-pdf"></i>
+                </div>
+                <h4 class="font-bold text-white">Detailed Reports</h4>
+                <p class="text-xs text-slate-400 mt-1">Download 20+ page PDF analysis.</p>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- COUNSELLOR SECTION (Feature Split) -->
+<section id="counsellors" class="py-24 px-6 bg-[#0B1220]">
+    <div class="max-w-7xl mx-auto grid lg:grid-cols-2 gap-20 items-center">
+        
+        <div class="order-2 lg:order-1 relative" data-aos="fade-right">
+            <!-- Decorative Elements -->
+            <div class="absolute -inset-4 bg-gradient-to-r from-indigo-500 to-cyan-500 rounded-3xl opacity-20 blur-xl"></div>
+            
+            <div class="relative glass rounded-2xl p-6 border border-slate-700">
+                <!-- Fake Dashboard UI -->
+                <div class="flex justify-between items-center mb-6 border-b border-white/5 pb-4">
+                    <span class="font-bold text-white">Counsellor Dashboard</span>
+                    <span class="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">Online</span>
+                </div>
+                
+                <div class="space-y-4">
+                    <div class="bg-white/5 p-4 rounded-xl flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-slate-700 overflow-hidden">
+                                <img src="https://i.pravatar.cc/100?img=12" alt="">
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-white">Session with Alex</p>
+                                <p class="text-xs text-slate-400">Today, 2:00 PM</p>
+                            </div>
+                        </div>
+                        <button class="px-3 py-1 bg-blue-600 text-xs rounded text-white">Join</button>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-white/5 p-4 rounded-xl">
+                            <p class="text-xs text-slate-400">Total Earnings</p>
+                            <p class="text-xl font-bold text-white">$1,240</p>
+                        </div>
+                        <div class="bg-white/5 p-4 rounded-xl">
+                            <p class="text-xs text-slate-400">Students Helped</p>
+                            <p class="text-xl font-bold text-white">48</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="order-1 lg:order-2" data-aos="fade-left">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-xs font-semibold text-indigo-400 mb-6">
+                For Career Experts
+            </div>
+            <h2 class="text-3xl md:text-5xl font-display font-bold mb-6 text-white">
+                Monetize Your <br>
+                <span class="text-indigo-400">Expertise.</span>
+            </h2>
+            <p class="text-lg text-slate-400 mb-8">
+                NextStep isn't just for students. It's a complete practice management solution. Set your rates, manage your calendar, and conduct secure video calls—all in one place.
+            </p>
+            
+            <ul class="space-y-4 mb-10">
+                <li class="flex items-center gap-3 text-slate-300">
+                    <i class="fa-solid fa-circle-check text-indigo-500"></i> Global Student Base
+                </li>
+                <li class="flex items-center gap-3 text-slate-300">
+                    <i class="fa-solid fa-circle-check text-indigo-500"></i> Automated Scheduling
+                </li>
+                <li class="flex items-center gap-3 text-slate-300">
+                    <i class="fa-solid fa-circle-check text-indigo-500"></i> Secure Payments
+                </li>
+            </ul>
+
+            <a href="/signup" class="btn-main px-8 py-4 border border-indigo-500 text-indigo-400 font-bold rounded-xl hover:bg-indigo-500 hover:text-white transition inline-block">
+                Apply as Counsellor
+            </a>
+        </div>
+
+    </div>
 </section>
 
 <!-- HOW IT WORKS -->
-<section id="how" class="py-28 px-6 bg-[#0B1220]">
-  <div class="max-w-6xl mx-auto text-center">
-    <h2 class="text-4xl font-bold mb-16">How NextStep Works</h2>
+<section id="how-it-works" class="py-24 px-6 relative overflow-hidden">
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-900/10 rounded-full blur-[100px] -z-10"></div>
+    
+    <div class="max-w-7xl mx-auto">
+        <div class="text-center mb-16">
+            <h2 class="text-4xl font-bold font-display">From Confusion to <span class="text-blue-500">Clarity</span></h2>
+        </div>
 
-    <div class="grid md:grid-cols-3 gap-12">
+        <div class="grid md:grid-cols-3 gap-8">
+            <!-- Step 1 -->
+            <div class="relative group" data-aos="fade-up" data-aos-delay="0">
+                <div class="absolute -inset-1 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
+                <div class="relative bg-[#0F172A] border border-white/10 p-8 rounded-xl h-full">
+                    <div class="text-6xl font-bold text-white/5 absolute top-4 right-4">01</div>
+                    <div class="w-14 h-14 bg-blue-500/20 rounded-full flex items-center justify-center text-blue-400 text-2xl mb-6">
+                        <i class="fa-solid fa-clipboard-question"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Take the Assessment</h3>
+                    <p class="text-slate-400 leading-relaxed">Spend 20 minutes answering scenario-based questions. No right or wrong answers, just you.</p>
+                </div>
+            </div>
 
-      <div class="card-hover p-8 rounded-3xl bg-white/5">
-        <img src="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&q=80&w=800"
-             class="rounded-xl mb-6" alt="Smart Tests">
-        <h3 class="text-xl font-bold mb-3">1. Take Smart Tests</h3>
-        <p class="text-gray-400 text-sm">
-          Personality + aptitude + scenario-based questions.
-        </p>
-      </div>
+            <!-- Step 2 -->
+            <div class="relative group" data-aos="fade-up" data-aos-delay="100">
+                <div class="absolute -inset-1 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
+                <div class="relative bg-[#0F172A] border border-white/10 p-8 rounded-xl h-full">
+                    <div class="text-6xl font-bold text-white/5 absolute top-4 right-4">02</div>
+                    <div class="w-14 h-14 bg-indigo-500/20 rounded-full flex items-center justify-center text-indigo-400 text-2xl mb-6">
+                        <i class="fa-solid fa-microchip"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Get AI Analysis</h3>
+                    <p class="text-slate-400 leading-relaxed">Our engine matches your profile against 5,000+ career paths to find your top 3 best fits.</p>
+                </div>
+            </div>
 
-      <div class="card-hover p-8 rounded-3xl bg-white/5">
-        <img src="https://images.unsplash.com/photo-1559136555-9303baea8ebd?auto=format&fit=crop&q=80&w=800"
-             class="rounded-xl mb-6" alt="AI Analysis">
-        <h3 class="text-xl font-bold mb-3">2. AI Analyzes You</h3>
-        <p class="text-gray-400 text-sm">
-          Deep pattern recognition to understand your strengths.
-        </p>
-      </div>
-
-      <div class="card-hover p-8 rounded-3xl bg-white/5">
-        <img src="https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&q=80&w=800"
-             class="rounded-xl mb-6" alt="Career Plan">
-        <h3 class="text-xl font-bold mb-3">3. Get Your Career Plan</h3>
-        <p class="text-gray-400 text-sm">
-          Streams, skills, roadmap — fully personalized.
-        </p>
-      </div>
-
+            <!-- Step 3 -->
+            <div class="relative group" data-aos="fade-up" data-aos-delay="200">
+                <div class="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
+                <div class="relative bg-[#0F172A] border border-white/10 p-8 rounded-xl h-full">
+                    <div class="text-6xl font-bold text-white/5 absolute top-4 right-4">03</div>
+                    <div class="w-14 h-14 bg-purple-500/20 rounded-full flex items-center justify-center text-purple-400 text-2xl mb-6">
+                        <i class="fa-solid fa-users-viewfinder"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Connect & Plan</h3>
+                    <p class="text-slate-400 leading-relaxed">Validate your results with a human expert and build a step-by-step roadmap to success.</p>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
 </section>
 
-<!-- FEATURE HIGHLIGHT -->
-<section class="py-28 px-6">
-  <div class="max-w-7xl mx-auto grid lg:grid-cols-2 gap-20 items-center">
+<!-- FAQ / ACCORDION -->
+<section class="py-20 px-6 bg-white/[0.02]">
+    <div class="max-w-3xl mx-auto">
+        <h2 class="text-3xl font-bold text-center mb-12">Common Questions</h2>
+        
+        <div class="space-y-4" x-data="{ selected: null }">
+            <!-- FAQ Item 1 -->
+            <div class="border border-white/10 rounded-xl bg-[#0F172A] overflow-hidden">
+                <button @click="selected !== 1 ? selected = 1 : selected = null" class="w-full p-6 text-left flex justify-between items-center hover:bg-white/5 transition">
+                    <span class="font-semibold text-white">Is the assessment free?</span>
+                    <i class="fa-solid fa-chevron-down text-slate-500 transition-transform duration-300" :class="selected === 1 ? 'rotate-180' : ''"></i>
+                </button>
+                <div x-show="selected === 1" x-collapse class="px-6 pb-6 text-slate-400">
+                    Yes! The basic personality assessment is completely free. You only pay if you want the detailed 20-page report or 1-on-1 counselling sessions.
+                </div>
+            </div>
 
-    <div>
-      <img src="https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&q=80&w=800"
-           class="rounded-3xl shadow-2xl" alt="Graduation Cap">
+            <!-- FAQ Item 2 -->
+            <div class="border border-white/10 rounded-xl bg-[#0F172A] overflow-hidden">
+                <button @click="selected !== 2 ? selected = 2 : selected = null" class="w-full p-6 text-left flex justify-between items-center hover:bg-white/5 transition">
+                    <span class="font-semibold text-white">How do I get paid as a counsellor?</span>
+                    <i class="fa-solid fa-chevron-down text-slate-500 transition-transform duration-300" :class="selected === 2 ? 'rotate-180' : ''"></i>
+                </button>
+                <div x-show="selected === 2" x-collapse class="px-6 pb-6 text-slate-400">
+                    We process payouts weekly directly to your bank account via Stripe. NextStep takes a small 10% platform fee on bookings.
+                </div>
+            </div>
+
+             <!-- FAQ Item 3 -->
+             <div class="border border-white/10 rounded-xl bg-[#0F172A] overflow-hidden">
+                <button @click="selected !== 3 ? selected = 3 : selected = null" class="w-full p-6 text-left flex justify-between items-center hover:bg-white/5 transition">
+                    <span class="font-semibold text-white">Is this suitable for working professionals?</span>
+                    <i class="fa-solid fa-chevron-down text-slate-500 transition-transform duration-300" :class="selected === 3 ? 'rotate-180' : ''"></i>
+                </button>
+                <div x-show="selected === 3" x-collapse class="px-6 pb-6 text-slate-400">
+                    Absolutely. While we specialize in students, our "Career Pivot" module is designed specifically for professionals looking to switch industries.
+                </div>
+            </div>
+        </div>
     </div>
-
-    <div>
-      <h2 class="text-4xl font-bold mb-6">
-        Discover What You’re Naturally Good At
-      </h2>
-      <p class="text-gray-400 mb-6">
-        Instead of guessing, understand your natural thinking style,
-        strengths, and decision patterns.
-      </p>
-      <ul class="space-y-3 text-gray-300">
-        <li>✓ Career Match Score</li>
-        <li>✓ Strength Analysis</li>
-        <li>✓ Stream Recommendation</li>
-        <li>✓ Skill Growth Plan</li>
-      </ul>
-    </div>
-
-  </div>
 </section>
 
-<!-- FINAL CTA -->
-<section class="py-28 px-6 text-center bg-gradient-to-r from-indigo-600 to-pink-500">
-  <h2 class="text-4xl font-extrabold mb-6 text-white">
-    Your Future Isn’t Random.
-  </h2>
-  <p class="text-lg mb-10 text-white/80">
-    Let’s make it intentional.
-  </p>
-  <a href="/signup"
-     class="px-10 py-5 bg-white text-black font-bold rounded-2xl hover:scale-105 transition">
-     Start Now — It’s Free
-  </a>
+<!-- CTA SECTION -->
+<section class="py-20 px-6">
+    <div class="max-w-5xl mx-auto relative">
+        <div class="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl blur-lg opacity-40"></div>
+        <div class="relative bg-gradient-to-br from-slate-900 to-slate-800 border border-white/10 rounded-3xl p-12 text-center overflow-hidden">
+            
+            <!-- Background Glow -->
+            <div class="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl"></div>
+
+            <h2 class="text-3xl md:text-5xl font-display font-bold text-white mb-6">Ready to Find Your Place?</h2>
+            <p class="text-lg text-slate-300 mb-10 max-w-2xl mx-auto">
+                Join 50,000+ others who have discovered their true potential. No credit card required to start.
+            </p>
+            
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="/signup" class="px-8 py-4 bg-white text-slate-900 font-bold rounded-xl hover:scale-105 transition shadow-xl">
+                    Get Started Free
+                </a>
+                <a href="#" class="px-8 py-4 bg-white/5 text-white border border-white/10 font-bold rounded-xl hover:bg-white/10 transition">
+                    View Sample Report
+                </a>
+            </div>
+        </div>
+    </div>
 </section>
 
-<footer class="py-12 text-center text-gray-500 text-sm">
-  © 2026 NextStep — Built For Students
+<!-- FOOTER -->
+<footer class="bg-[#020617] border-t border-white/5 pt-16 pb-8 text-sm">
+    <div class="max-w-7xl mx-auto px-6 grid md:grid-cols-4 gap-12 mb-12">
+        <div class="col-span-1 md:col-span-1">
+            <div class="flex items-center gap-2 mb-4">
+                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">N</div>
+                <span class="text-xl font-bold text-white">NextStep</span>
+            </div>
+            <p class="text-slate-500 mb-6">
+                Bridging the gap between talent and opportunity through AI and human connection.
+            </p>
+            <div class="flex gap-4">
+                <a href="#" class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:bg-blue-600 hover:text-white transition"><i class="fa-brands fa-twitter"></i></a>
+                <a href="#" class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:bg-blue-600 hover:text-white transition"><i class="fa-brands fa-linkedin"></i></a>
+                <a href="#" class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:bg-blue-600 hover:text-white transition"><i class="fa-brands fa-instagram"></i></a>
+            </div>
+        </div>
+
+        <div>
+            <h4 class="text-white font-bold mb-4">Platform</h4>
+            <ul class="space-y-2 text-slate-500">
+                <li><a href="#" class="hover:text-blue-400 transition">For Students</a></li>
+                <li><a href="#" class="hover:text-blue-400 transition">For Counsellors</a></li>
+                <li><a href="#" class="hover:text-blue-400 transition">Institutions</a></li>
+                <li><a href="#" class="hover:text-blue-400 transition">Pricing</a></li>
+            </ul>
+        </div>
+
+        <div>
+            <h4 class="text-white font-bold mb-4">Company</h4>
+            <ul class="space-y-2 text-slate-500">
+                <li><a href="#" class="hover:text-blue-400 transition">About Us</a></li>
+                <li><a href="#" class="hover:text-blue-400 transition">Careers</a></li>
+                <li><a href="#" class="hover:text-blue-400 transition">Blog</a></li>
+                <li><a href="#" class="hover:text-blue-400 transition">Contact</a></li>
+            </ul>
+        </div>
+
+        <div>
+            <h4 class="text-white font-bold mb-4">Legal</h4>
+            <ul class="space-y-2 text-slate-500">
+                <li><a href="#" class="hover:text-blue-400 transition">Privacy Policy</a></li>
+                <li><a href="#" class="hover:text-blue-400 transition">Terms of Service</a></li>
+                <li><a href="#" class="hover:text-blue-400 transition">Cookie Policy</a></li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="max-w-7xl mx-auto px-6 border-t border-white/5 pt-8 text-center text-slate-600">
+        &copy; 2026 NextStep Inc. All rights reserved.
+    </div>
 </footer>
+
+<!-- Initialize Animate On Scroll -->
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+<script>
+  AOS.init({
+      once: true,
+      offset: 50,
+      duration: 800,
+  });
+</script>
 
 </body>
 </html>

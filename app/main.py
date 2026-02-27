@@ -133,6 +133,7 @@ async def signup(
     password: str = Form(...),
     full_name: str = Form(...),
     contact_number: str = Form(...),
+    role: str = Form("student"),
     db: Session = Depends(get_db)
 ):
     # Check existing user
@@ -142,10 +143,16 @@ async def signup(
     
     # Create User
     hashed_pw = get_password_hash(password)
-    new_user = models.User(email=email, hashed_password=hashed_pw, full_name=full_name, contact_number=contact_number)
+    new_user = models.User(email=email, hashed_password=hashed_pw, full_name=full_name, contact_number=contact_number, role=role)
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+    
+    # Create Counsellor Profile
+    if role == "counsellor":
+        c_profile = models.CounsellorProfile(user_id=new_user.id)
+        db.add(c_profile)
+        db.commit()
     
     # Login & Redirect
     # Redirect to Login (No auto-login)
@@ -477,6 +484,11 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
     if not user:
         return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
     
+    if user.role == "counsellor":
+        profile = db.query(models.CounsellorProfile).filter(models.CounsellorProfile.user_id == user.id).first()
+        appointments = db.query(models.Appointment).filter(models.Appointment.counsellor_id == user.id).all()
+        return templates.TemplateResponse("counsellor_dashboard.html", {"request": request, "user": user, "profile": profile, "appointments": appointments})
+    
     # Fetch assessment result to show on dashboard
     assessment = db.query(models.AssessmentResult).filter(models.AssessmentResult.user_id == user.id).first()
     
@@ -529,6 +541,66 @@ async def delete_user(user_id: int, request: Request, db: Session = Depends(get_
     
     return RedirectResponse(url="/admin", status_code=status.HTTP_302_FOUND)
 
+
+# --- Counsellor Routes ---
+
+@app.post("/counsellor/update")
+async def counsellor_update(
+    request: Request,
+    fee: float = Form(0.0),
+    availability_text: str = Form(""),
+    db: Session = Depends(get_db)
+):
+    user = get_current_user(request, db)
+    if not user or user.role != "counsellor":
+         return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+    
+    profile = db.query(models.CounsellorProfile).filter(models.CounsellorProfile.user_id == user.id).first()
+    if profile:
+        profile.fee = fee
+        profile.availability = {"text": availability_text}
+    else:
+        profile = models.CounsellorProfile(user_id=user.id, fee=fee, availability={"text": availability_text})
+        db.add(profile)
+    
+    db.commit()
+    return RedirectResponse(url="/dashboard", status_code=status.HTTP_302_FOUND)
+
+@app.get("/counsellors", response_class=HTMLResponse)
+async def list_counsellors(request: Request, db: Session = Depends(get_db)):
+    user = get_current_user(request, db)
+    if not user:
+        return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+        
+    counsellors = db.query(models.CounsellorProfile).all()
+    
+    return templates.TemplateResponse("counsellors_list.html", {"request": request, "user": user, "counsellors": counsellors})
+
+import datetime
+@app.post("/book_counsellor/{counsellor_id}")
+async def book_counsellor(counsellor_id: int, request: Request, fee: float = Form(...), db: Session = Depends(get_db)):
+    user = get_current_user(request, db)
+    if not user:
+         return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+         
+    # Dummy video link
+    import uuid
+    meeting_id = str(uuid.uuid4())[:8]
+    meeting_link = f"https://meet.google.com/{meeting_id}"
+    
+    appointment = models.Appointment(
+        student_id=user.id,
+        counsellor_id=counsellor_id,
+        appointment_time=datetime.datetime.now() + datetime.timedelta(days=1), # Dummy next day time
+        status="scheduled",
+        payment_status="paid",
+        meeting_link=meeting_link
+    )
+    db.add(appointment)
+    db.commit()
+    db.refresh(appointment)
+    
+    return templates.TemplateResponse("appointment_success.html", {"request": request, "user": user, "appointment": appointment})
 
 # --- Phase 3 Routes ---
 
