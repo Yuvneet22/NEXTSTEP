@@ -7,8 +7,8 @@
 scenarios_focused_specialist = [
     {
         "id": "S1_TheBug",
-        "title": "The Hidden Glitch",
-        "story": "Let's imagine you are finalizing a critical project. You spot a tiny logic error—one that might cause a failure in very rare cases. The project is already marked 'complete' by your lead. What does your gut tell you to do?",
+        "title": "Fixing a Critical Bug",
+        "story": "You are finishing an important team project. You spot a tiny logic error—one that might cause a failure in very rare cases. The project is already marked 'complete' by your lead. What is your immediate reaction?",
         "options": [
             {
                 "value": "A",

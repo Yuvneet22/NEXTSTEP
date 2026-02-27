@@ -70,9 +70,22 @@ class Feedback(Base):
 
     user = relationship("User", back_populates="feedbacks")
 
+class Ticket(Base):
+    __tablename__ = "tickets"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    subject = Column(String)
+    description = Column(Text)
+    status = Column(String, default="Open")
+    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", back_populates="tickets")
+
 # Update User model to include messages and feedback relationships
 User.messages = relationship("ChatMessage", back_populates="user", order_by="ChatMessage.timestamp")
 User.feedbacks = relationship("Feedback", back_populates="user", order_by="Feedback.timestamp")
+User.tickets = relationship("Ticket", back_populates="user", order_by="Ticket.timestamp")
 
 class CounsellorProfile(Base):
     __tablename__ = "counsellor_profiles"

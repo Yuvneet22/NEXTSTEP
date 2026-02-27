@@ -509,14 +509,16 @@ async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
     # 2. Fetch all users
     all_users = db.query(models.User).all()
 
-    # 3. Fetch all feedback
+    # 3. Fetch all feedback and tickets
     all_feedback = db.query(models.Feedback).order_by(models.Feedback.timestamp.desc()).all()
+    all_tickets = db.query(models.Ticket).order_by(models.Ticket.timestamp.desc()).all()
     
     return templates.TemplateResponse("admin_dashboard.html", {
         "request": request, 
         "user": user, 
         "users": all_users,
-        "feedbacks": all_feedback
+        "feedbacks": all_feedback,
+        "tickets": all_tickets
     })
 
 @app.post("/admin/users/{user_id}/delete")
@@ -674,10 +676,12 @@ async def assessment_phase3_submit(
     
     Provide a warm, sophisticated, and encouraging insight (3-4 sentences) that highlights the fascinating nuances of their personality. 
     Start with a professional greeting or observation that feels like a real counselor session.
+    IMPORTANT: Do NOT enclose your response in quotes or inverted commas. Write it as direct text.
     """
     
     try:
-         result.phase3_analysis = await generate_content_with_fallback(prompt_p3)
+         raw_text = await generate_content_with_fallback(prompt_p3)
+         result.phase3_analysis = raw_text.replace('"', '').replace("'", "")
     except Exception as e:
          result.phase3_analysis = f"Analysis unavailable at this time. ({str(e)})"
         
@@ -1437,6 +1441,36 @@ async def submit_feedback(
         rating=rating
     )
     db.add(new_feedback)
+    db.commit()
+    
+    return RedirectResponse(url="/dashboard", status_code=status.HTTP_302_FOUND)
+
+# --- Ticket System Routes ---
+
+@app.get("/ticket", response_class=HTMLResponse)
+async def ticket_page(request: Request, db: Session = Depends(get_db)):
+    user = get_current_user(request, db)
+    if not user:
+        return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+    return templates.TemplateResponse("ticket.html", {"request": request, "user": user})
+
+@app.post("/ticket/submit")
+async def submit_ticket(
+    request: Request,
+    subject: str = Form(...),
+    description: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    user = get_current_user(request, db)
+    if not user:
+        return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+    
+    new_ticket = models.Ticket(
+        user_id=user.id,
+        subject=subject,
+        description=description
+    )
+    db.add(new_ticket)
     db.commit()
     
     return RedirectResponse(url="/dashboard", status_code=status.HTTP_302_FOUND)
