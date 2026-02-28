@@ -80,7 +80,7 @@ graph TD
     DB --- Appts["Appointments"]
     DB --- Tickets["Support Tickets"]
     DB --- Reviews["Feedback & Ratings"]
-    ``` 
+```
 
 ## Tech Stack
 
