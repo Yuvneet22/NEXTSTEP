@@ -5,34 +5,39 @@
 {% block content %}
 <!-- Main Container -->
 <div class="space-y-8 animate-fade-in-up">
-    
+
     <!-- Welcome Header -->
     <div class="relative overflow-hidden rounded-3xl bg-slate-900 text-white shadow-2xl">
         <!-- Abstract Background Decoration -->
-        <div class="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-indigo-500 blur-3xl opacity-20"></div>
-        <div class="absolute bottom-0 left-0 -ml-16 -mb-16 w-64 h-64 rounded-full bg-violet-500 blur-3xl opacity-20"></div>
-        
-        <div class="relative z-10 px-8 py-10 sm:px-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div class="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-indigo-500 blur-3xl opacity-20">
+        </div>
+        <div class="absolute bottom-0 left-0 -ml-16 -mb-16 w-64 h-64 rounded-full bg-violet-500 blur-3xl opacity-20">
+        </div>
+
+        <div
+            class="relative z-10 px-8 py-10 sm:px-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div>
                 <h1 class="text-3xl font-bold tracking-tight">
                     {% if user %}
-                        Welcome back, {{ user.full_name.split()[0] if user.full_name else 'User' }}! 👋
+                    Welcome back, {{ user.full_name.split()[0] if user.full_name else 'User' }}! 👋
                     {% else %}
-                        Welcome to NextStep! 👋
+                    Welcome to NextStep! 👋
                     {% endif %}
                 </h1>
                 <p class="mt-2 text-slate-300 max-w-xl text-lg">
                     {% if assessment %}
-                        You are on track. Let's refine your career path today.
+                    You are on track. Let's refine your career path today.
                     {% else %}
-                        Your future starts here. Begin your assessment to unlock insights.
+                    Your future starts here. Begin your assessment to unlock insights.
                     {% endif %}
                 </p>
             </div>
-            
+
             {% if assessment and assessment.phase_2_category %}
-            <div class="flex items-center gap-3 bg-white/10 backdrop-blur-md px-5 py-3 rounded-2xl border border-white/10">
-                <div class="h-10 w-10 rounded-full bg-gradient-to-br from-emerald-400 to-green-600 flex items-center justify-center text-white font-bold shadow-lg">
+            <div
+                class="flex items-center gap-3 bg-white/10 backdrop-blur-md px-5 py-3 rounded-2xl border border-white/10">
+                <div
+                    class="h-10 w-10 rounded-full bg-gradient-to-br from-emerald-400 to-green-600 flex items-center justify-center text-white font-bold shadow-lg">
                     {{ assessment.phase_2_category[0] | upper }}
                 </div>
                 <div>
@@ -47,48 +52,60 @@
     <!-- Progress Stepper (Visual Timeline) -->
     <div class="bg-white/70 backdrop-blur-xl rounded-3xl p-8 shadow-xl border border-white/50">
         <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6">Your Journey</h3>
-        
+
         <div class="relative">
             <!-- Connecting Line -->
             <div class="absolute top-1/2 left-0 w-full h-1 bg-slate-200 -translate-y-1/2 rounded-full -z-10"></div>
             <div class="absolute top-1/2 left-0 h-1 bg-gradient-to-r from-violet-600 to-indigo-600 -translate-y-1/2 rounded-full -z-10 transition-all duration-1000"
-                 style="width: {% if assessment.final_answers %}100%{% elif assessment.phase3_answers %}75%{% elif assessment %}50%{% else %}10%{% endif %}"></div>
+                style="width: {% if assessment.final_answers %}100%{% elif assessment.phase3_answers %}75%{% elif assessment %}50%{% else %}10%{% endif %}">
+            </div>
 
             <div class="flex justify-between items-center w-full">
                 <!-- Step 1 -->
                 <div class="flex flex-col items-center gap-3 group cursor-default">
-                    <div class="w-10 h-10 rounded-full flex items-center justify-center border-4 border-white shadow-md transition-all duration-300
+                    <div
+                        class="w-10 h-10 rounded-full flex items-center justify-center border-4 border-white shadow-md transition-all duration-300
                         {% if assessment %}bg-violet-600 text-white scale-110{% else %}bg-white text-slate-400 border-slate-200{% endif %}">
                         <i class="fas fa-check"></i>
                     </div>
-                    <p class="text-xs font-bold {% if assessment %}text-violet-700{% else %}text-slate-400{% endif %}">Basics</p>
+                    <p class="text-xs font-bold {% if assessment %}text-violet-700{% else %}text-slate-400{% endif %}">
+                        Basics</p>
                 </div>
 
                 <!-- Step 2 -->
                 <div class="flex flex-col items-center gap-3 group">
-                    <div class="w-10 h-10 rounded-full flex items-center justify-center border-4 border-white shadow-md transition-all duration-300
+                    <div
+                        class="w-10 h-10 rounded-full flex items-center justify-center border-4 border-white shadow-md transition-all duration-300
                         {% if assessment.phase3_answers %}bg-violet-600 text-white scale-110{% elif assessment %}bg-white border-violet-600 text-violet-600 animate-pulse{% else %}bg-white text-slate-400 border-slate-200{% endif %}">
                         <i class="fas fa-brain"></i>
                     </div>
-                    <p class="text-xs font-bold {% if assessment.phase3_answers %}text-violet-700{% elif assessment %}text-violet-600{% else %}text-slate-400{% endif %}">Deep Dive</p>
+                    <p
+                        class="text-xs font-bold {% if assessment.phase3_answers %}text-violet-700{% elif assessment %}text-violet-600{% else %}text-slate-400{% endif %}">
+                        Deep Dive</p>
                 </div>
 
                 <!-- Step 3 -->
                 <div class="flex flex-col items-center gap-3 group">
-                    <div class="w-10 h-10 rounded-full flex items-center justify-center border-4 border-white shadow-md transition-all duration-300
+                    <div
+                        class="w-10 h-10 rounded-full flex items-center justify-center border-4 border-white shadow-md transition-all duration-300
                         {% if assessment.final_answers %}bg-violet-600 text-white scale-110{% elif assessment.phase3_answers %}bg-white border-violet-600 text-violet-600 animate-pulse{% else %}bg-white text-slate-400 border-slate-200{% endif %}">
                         <i class="fas fa-bullseye"></i>
                     </div>
-                    <p class="text-xs font-bold {% if assessment.final_answers %}text-violet-700{% elif assessment.phase3_answers %}text-violet-600{% else %}text-slate-400{% endif %}">Final Plan</p>
+                    <p
+                        class="text-xs font-bold {% if assessment.final_answers %}text-violet-700{% elif assessment.phase3_answers %}text-violet-600{% else %}text-slate-400{% endif %}">
+                        Final Plan</p>
                 </div>
 
                 <!-- Step 4 -->
                 <div class="flex flex-col items-center gap-3 group">
-                    <div class="w-10 h-10 rounded-full flex items-center justify-center border-4 border-white shadow-md transition-all duration-300
+                    <div
+                        class="w-10 h-10 rounded-full flex items-center justify-center border-4 border-white shadow-md transition-all duration-300
                         {% if assessment.final_answers %}bg-emerald-500 text-white animate-bounce{% else %}bg-white text-slate-400 border-slate-200{% endif %}">
                         <i class="fas fa-user-graduate"></i>
                     </div>
-                    <p class="text-xs font-bold {% if assessment.final_answers %}text-emerald-600{% else %}text-slate-400{% endif %}">Counselling</p>
+                    <p
+                        class="text-xs font-bold {% if assessment.final_answers %}text-emerald-600{% else %}text-slate-400{% endif %}">
+                        Counselling</p>
                 </div>
             </div>
         </div>
@@ -97,53 +114,70 @@
     <!-- MAIN CONTENT AREA -->
     {% if not assessment or not assessment.phase_2_category %}
     <!-- STATE 1: NEW USER / START ASSESSMENT -->
-    <div class="bg-gradient-to-br from-indigo-50 to-violet-50 border border-indigo-100 rounded-3xl p-8 sm:p-12 text-center">
+    <div
+        class="bg-gradient-to-br from-indigo-50 to-violet-50 border border-indigo-100 rounded-3xl p-8 sm:p-12 text-center">
         <div class="max-w-3xl mx-auto mb-12">
             <h2 class="text-3xl font-extrabold text-slate-900 mb-4">Let's Find Your Superpower</h2>
-            <p class="text-lg text-slate-600">Select your current academic stage to launch a personalized assessment tailored to your needs.</p>
+            <p class="text-lg text-slate-600">Select your current academic stage to launch a personalized assessment
+                tailored to your needs.</p>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <!-- 10th Card -->
-            <a href="/assessment/start?class_level=10th" class="group relative bg-white rounded-3xl p-8 shadow-lg shadow-indigo-100 hover:shadow-2xl hover:shadow-indigo-200 transition-all duration-300 border border-slate-100 hover:-translate-y-2 overflow-hidden text-left">
-                <div class="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110"></div>
+            <a href="/assessment/start?class_level=10th"
+                class="group relative bg-white rounded-3xl p-8 shadow-lg shadow-indigo-100 hover:shadow-2xl hover:shadow-indigo-200 transition-all duration-300 border border-slate-100 hover:-translate-y-2 overflow-hidden text-left">
+                <div
+                    class="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110">
+                </div>
                 <div class="relative z-10">
-                    <div class="w-14 h-14 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                    <div
+                        class="w-14 h-14 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:bg-blue-600 group-hover:text-white transition-colors">
                         <i class="fas fa-shapes"></i>
                     </div>
                     <h3 class="text-2xl font-bold text-slate-900 mb-2">Class 10</h3>
                     <p class="text-slate-500 text-sm mb-6">Stream selection & foundational strength analysis.</p>
-                    <span class="inline-flex items-center text-blue-600 font-bold group-hover:translate-x-2 transition-transform">
+                    <span
+                        class="inline-flex items-center text-blue-600 font-bold group-hover:translate-x-2 transition-transform">
                         Start Now <i class="fas fa-arrow-right ml-2"></i>
                     </span>
                 </div>
             </a>
 
             <!-- 12th Card -->
-            <a href="/assessment/start?class_level=12th" class="group relative bg-white rounded-3xl p-8 shadow-lg shadow-purple-100 hover:shadow-2xl hover:shadow-purple-200 transition-all duration-300 border border-slate-100 hover:-translate-y-2 overflow-hidden text-left">
-                <div class="absolute top-0 right-0 w-32 h-32 bg-purple-50 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110"></div>
+            <a href="/assessment/start?class_level=12th"
+                class="group relative bg-white rounded-3xl p-8 shadow-lg shadow-purple-100 hover:shadow-2xl hover:shadow-purple-200 transition-all duration-300 border border-slate-100 hover:-translate-y-2 overflow-hidden text-left">
+                <div
+                    class="absolute top-0 right-0 w-32 h-32 bg-purple-50 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110">
+                </div>
                 <div class="relative z-10">
-                    <div class="w-14 h-14 bg-purple-100 text-purple-600 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                    <div
+                        class="w-14 h-14 bg-purple-100 text-purple-600 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:bg-purple-600 group-hover:text-white transition-colors">
                         <i class="fas fa-compass"></i>
                     </div>
                     <h3 class="text-2xl font-bold text-slate-900 mb-2">Class 12</h3>
                     <p class="text-slate-500 text-sm mb-6">College majors, entrance exams & career mapping.</p>
-                    <span class="inline-flex items-center text-purple-600 font-bold group-hover:translate-x-2 transition-transform">
+                    <span
+                        class="inline-flex items-center text-purple-600 font-bold group-hover:translate-x-2 transition-transform">
                         Start Now <i class="fas fa-arrow-right ml-2"></i>
                     </span>
                 </div>
             </a>
 
             <!-- Grad Card -->
-            <a href="/assessment/start?class_level=Above 12th" class="group relative bg-white rounded-3xl p-8 shadow-lg shadow-pink-100 hover:shadow-2xl hover:shadow-pink-200 transition-all duration-300 border border-slate-100 hover:-translate-y-2 overflow-hidden text-left">
-                <div class="absolute top-0 right-0 w-32 h-32 bg-pink-50 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110"></div>
+            <a href="/assessment/start?class_level=Above 12th"
+                class="group relative bg-white rounded-3xl p-8 shadow-lg shadow-pink-100 hover:shadow-2xl hover:shadow-pink-200 transition-all duration-300 border border-slate-100 hover:-translate-y-2 overflow-hidden text-left">
+                <div
+                    class="absolute top-0 right-0 w-32 h-32 bg-pink-50 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110">
+                </div>
                 <div class="relative z-10">
-                    <div class="w-14 h-14 bg-pink-100 text-pink-600 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:bg-pink-600 group-hover:text-white transition-colors">
+                    <div
+                        class="w-14 h-14 bg-pink-100 text-pink-600 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:bg-pink-600 group-hover:text-white transition-colors">
                         <i class="fas fa-briefcase"></i>
                     </div>
                     <h3 class="text-2xl font-bold text-slate-900 mb-2">Graduate</h3>
                     <p class="text-slate-500 text-sm mb-6">Specialization, job market readiness & pivots.</p>
-                    <span class="inline-flex items-center text-pink-600 font-bold group-hover:translate-x-2 transition-transform">
+                    <span
+                        class="inline-flex items-center text-pink-600 font-bold group-hover:translate-x-2 transition-transform">
                         Start Now <i class="fas fa-arrow-right ml-2"></i>
                     </span>
                 </div>
@@ -154,12 +188,13 @@
     {% else %}
     <!-- STATE 2: RETURNING USER / DASHBOARD WIDGETS -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
+
         <!-- Left Column: Main Results & Next Steps -->
         <div class="lg:col-span-2 space-y-6">
-            
+
             <!-- Result Summary Card -->
-            <div class="bg-white/70 backdrop-blur-xl rounded-3xl p-8 shadow-xl border border-white/50 flex flex-col md:flex-row gap-8 items-center">
+            <div
+                class="bg-white/70 backdrop-blur-xl rounded-3xl p-8 shadow-xl border border-white/50 flex flex-col md:flex-row gap-8 items-center">
                 <div class="flex-shrink-0 relative">
                     <!-- Circular Progress/Score Placeholder -->
                     <div class="w-32 h-32 rounded-full bg-gradient-to-tr from-violet-600 to-indigo-500 p-1">
@@ -170,37 +205,192 @@
                     </div>
                 </div>
                 <div class="flex-1 text-center md:text-left">
-                    <h2 class="text-2xl font-bold text-slate-900 mb-2">Top Recommendation: <span class="text-violet-600">{{ assessment.phase_2_category }}</span></h2>
-                    <p class="text-slate-500 mb-6">Based on your personality type ({{ assessment.personality }}) and goal status.</p>
+                    <h2 class="text-2xl font-bold text-slate-900 mb-2">Top Recommendation: <span
+                            class="text-violet-600">{{ assessment.phase_2_category }}</span></h2>
+                    <p class="text-slate-500 mb-6">Based on your personality type ({{ assessment.personality }}) and
+                        goal status.</p>
                     <div class="flex flex-wrap gap-3 justify-center md:justify-start">
-                        <a href="/assessment/result" class="px-6 py-2.5 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800 transition shadow-lg shadow-slate-900/20">
+                        <a href="/assessment/result"
+                            class="px-6 py-2.5 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800 transition shadow-lg shadow-slate-900/20">
                             View Full Report
                         </a>
-                        <a href="/chatbot" class="px-6 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl font-semibold hover:bg-slate-50 transition">
+                        <a href="/chatbot"
+                            class="px-6 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl font-semibold hover:bg-slate-50 transition">
                             Ask AI Assistant
                         </a>
                     </div>
                 </div>
             </div>
 
+            <!-- Scheduled Sessions / Calendar Card -->
+            {% if appointments %}
+            <div class="bg-white/70 backdrop-blur-xl rounded-3xl p-8 shadow-xl border border-white/50">
+                <h3 class="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                    <i class="fas fa-calendar-alt text-indigo-500"></i> Your Scheduled Sessions
+                </h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {% for appt in appointments %}
+                    <div
+                        class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all">
+                        <div class="flex justify-between items-start mb-4">
+                            <div
+                                class="h-12 w-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+                                <i class="fas fa-video"></i>
+                            </div>
+                            {% if appt.status == 'scheduled' %}
+                            <div id="status-container-{{ appt.id }}">
+                                <span
+                                    class="px-3 py-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full uppercase tracking-wider">Scheduled</span>
+                            </div>
+                            {% else %}
+                            <span
+                                class="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-full uppercase tracking-wider">{{
+                                appt.status }}</span>
+                            {% endif %}
+                        </div>
+
+                        <h4 class="font-bold text-slate-900 mb-1">Counsellor: {{ appt.counsellor.full_name }}</h4>
+                        <p class="text-sm text-slate-500 mb-4 font-medium">
+                            <i class="far fa-calendar-check mr-2"></i> {{ appt.appointment_time.strftime('%b %d, %Y') }}
+                            at {{ appt.appointment_time.strftime('%I:%M %p') }}
+                        </p>
+
+                        <div id="join-container-{{ appt.id }}">
+                            <a href="{{ appt.meeting_link }}" target="_blank"
+                                class="inline-flex w-full items-center justify-center px-4 py-3 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition-all transform active:scale-95 shadow-lg shadow-indigo-200">
+                                Join Video Call
+                            </a>
+                            <form action="/appointment/delete/{{ appt.id }}" method="POST" class="mt-2"
+                                onsubmit="return confirm('Are you sure you want to cancel this appointment?')">
+                                <button type="submit"
+                                    class="w-full text-[10px] text-slate-400 hover:text-red-500 font-bold uppercase tracking-wider transition-colors">
+                                    <i class="fas fa-trash-alt mr-1"></i> Cancel Session
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Counselor Status Polling Script -->
+            <script>
+                function pollAppointmentStatus(apptId) {
+                    setInterval(async () => {
+                        try {
+                            const response = await fetch(`/appointment_status/${apptId}`);
+                            const data = await response.json();
+
+                            if (data.counsellor_joined) {
+                                const statusDiv = document.getElementById(`status-container-${apptId}`);
+                                const joinDiv = document.getElementById(`join-container-${apptId}`);
+
+                                if (statusDiv && !statusDiv.innerHTML.includes('Online')) {
+                                    statusDiv.innerHTML = `
+                                    <span class="flex items-center gap-1.5 px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full uppercase tracking-wider animate-pulse">
+                                        <span class="w-2 h-2 bg-white rounded-full"></span> Online
+                                    </span>
+                                `;
+
+                                    // Optional: make the button more prominent
+                                    const joinBtn = joinDiv.querySelector('a');
+                                    if (joinBtn) {
+                                        joinBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+                                        joinBtn.classList.add('bg-green-600', 'hover:bg-green-700', 'animate-bounce');
+                                        joinBtn.innerText = "Join Now - Counsellor is waiting!";
+                                    }
+                                }
+                            }
+                        } catch (err) {
+                            console.error("Status check failed:", err);
+                        }
+                    }, 5000); // Poll every 5 seconds
+                }
+
+                // Initialize polling for all scheduled appointments
+                {% for appt in appointments %}
+                {% if appt.status == 'scheduled' %}
+                pollAppointmentStatus({{ appt.id }});
+                {% endif %}
+                {% endfor %}
+            </script>
+
+            <!-- Support Tickets Card -->
+            {% if tickets %}
+            <div class="bg-white/70 backdrop-blur-xl rounded-3xl p-8 shadow-xl border border-white/50">
+                <h3 class="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                    <i class="fas fa-ticket-alt text-blue-500"></i> Your Support Tickets
+                </h3>
+
+                <div class="space-y-4">
+                    {% for ticket in tickets %}
+                    <div
+                        class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm transition-all hover:shadow-md">
+                        <div class="flex justify-between items-start mb-2">
+                            <h4 class="font-bold text-slate-900">{{ ticket.subject }}</h4>
+                            {% if ticket.status == 'Closed' %}
+                            <span
+                                class="px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-green-100 text-green-700 uppercase border border-green-200">Resolved</span>
+                            {% else %}
+                            <span
+                                class="px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-yellow-100 text-yellow-700 uppercase border border-yellow-200">Open</span>
+                            {% endif %}
+                        </div>
+                        <p class="text-sm text-slate-500 mb-4 italic">"{{ ticket.description }}"</p>
+
+                        {% if ticket.admin_reply %}
+                        <div
+                            class="mt-4 p-4 bg-indigo-50 rounded-2xl border border-indigo-100 relative overflow-hidden">
+                            <div class="absolute top-0 right-0 p-2 opacity-5">
+                                <i class="fas fa-comment-dots text-4xl"></i>
+                            </div>
+                            <p
+                                class="text-xs font-bold text-indigo-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                <i class="fas fa-user-shield text-[10px]"></i> Admin Response
+                            </p>
+                            <p class="text-sm text-slate-700 leading-relaxed">{{ ticket.admin_reply }}</p>
+
+                            {% if ticket.status == 'Closed' %}
+                            <div class="mt-4 pt-4 border-t border-indigo-100">
+                                <p class="text-[11px] text-indigo-500 font-medium italic">
+                                    Issue resolved. If you're not satisfied, please <a href="/ticket"
+                                        class="underline font-bold hover:text-indigo-700">raise a new ticket</a>.
+                                </p>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
             <!-- Next Action Card -->
-            <div class="bg-gradient-to-r from-violet-600 to-indigo-600 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden">
+            <div
+                class="bg-gradient-to-r from-violet-600 to-indigo-600 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden">
                 <div class="absolute right-0 top-0 opacity-10 transform translate-x-1/4 -translate-y-1/4">
                     <i class="fas fa-rocket text-9xl"></i>
                 </div>
-                
+
                 {% if not assessment.final_answers %}
-                    <h3 class="text-xl font-bold mb-2">One Step Remaining!</h3>
-                    <p class="text-indigo-100 mb-6 max-w-lg">You have completed the deep dive. Finish the final phase to unlock your comprehensive career roadmap.</p>
-                    <a href="/assessment/final" class="inline-block px-6 py-3 bg-white text-indigo-600 font-bold rounded-xl hover:bg-indigo-50 transition shadow-md">
-                        Continue Assessment &rarr;
-                    </a>
+                <h3 class="text-xl font-bold mb-2">One Step Remaining!</h3>
+                <p class="text-indigo-100 mb-6 max-w-lg">You have completed the deep dive. Finish the final phase to
+                    unlock your comprehensive career roadmap.</p>
+                <a href="/assessment/final"
+                    class="inline-block px-6 py-3 bg-white text-indigo-600 font-bold rounded-xl hover:bg-indigo-50 transition shadow-md">
+                    Continue Assessment &rarr;
+                </a>
                 {% else %}
-                    <h3 class="text-xl font-bold mb-2">Ready for Expert Guidance?</h3>
-                    <p class="text-indigo-100 mb-6 max-w-lg">Your report is ready. The next logical step is to validate your plan with a certified counsellor.</p>
-                    <a href="/counsellors" class="inline-block px-6 py-3 bg-white text-indigo-600 font-bold rounded-xl hover:bg-indigo-50 transition shadow-md">
-                        Book a Session &rarr;
-                    </a>
+                <h3 class="text-xl font-bold mb-2">Ready for Expert Guidance?</h3>
+                <p class="text-indigo-100 mb-6 max-w-lg">Your report is ready. The next logical step is to validate your
+                    plan with a certified counsellor.</p>
+                <a href="/counsellors"
+                    class="inline-block px-6 py-3 bg-white text-indigo-600 font-bold rounded-xl hover:bg-indigo-50 transition shadow-md">
+                    Book a Session &rarr;
+                </a>
                 {% endif %}
             </div>
 
@@ -208,7 +398,7 @@
 
         <!-- Right Column: Quick Stats & Tools -->
         <div class="space-y-6">
-            
+
             <!-- Quick Stats -->
             <div class="bg-white/70 backdrop-blur-xl rounded-3xl p-6 shadow-lg border border-white/50">
                 <h4 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
@@ -238,26 +428,34 @@
 
             <!-- Tools Menu -->
             <div class="grid grid-cols-2 gap-4">
-                <a href="/resources" class="bg-white/80 p-4 rounded-2xl shadow-sm border border-slate-100 hover:border-violet-200 hover:shadow-md transition text-center group">
-                    <div class="w-10 h-10 mx-auto bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition">
+                <a href="/resources"
+                    class="bg-white/80 p-4 rounded-2xl shadow-sm border border-slate-100 hover:border-violet-200 hover:shadow-md transition text-center group">
+                    <div
+                        class="w-10 h-10 mx-auto bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition">
                         <i class="fas fa-book-open"></i>
                     </div>
                     <span class="text-sm font-bold text-slate-700">Resources</span>
                 </a>
-                <a href="/colleges" class="bg-white/80 p-4 rounded-2xl shadow-sm border border-slate-100 hover:border-violet-200 hover:shadow-md transition text-center group">
-                    <div class="w-10 h-10 mx-auto bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition">
+                <a href="/colleges"
+                    class="bg-white/80 p-4 rounded-2xl shadow-sm border border-slate-100 hover:border-violet-200 hover:shadow-md transition text-center group">
+                    <div
+                        class="w-10 h-10 mx-auto bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition">
                         <i class="fas fa-university"></i>
                     </div>
                     <span class="text-sm font-bold text-slate-700">Colleges</span>
                 </a>
-                <a href="/community" class="bg-white/80 p-4 rounded-2xl shadow-sm border border-slate-100 hover:border-violet-200 hover:shadow-md transition text-center group">
-                    <div class="w-10 h-10 mx-auto bg-pink-100 text-pink-600 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition">
+                <a href="/community"
+                    class="bg-white/80 p-4 rounded-2xl shadow-sm border border-slate-100 hover:border-violet-200 hover:shadow-md transition text-center group">
+                    <div
+                        class="w-10 h-10 mx-auto bg-pink-100 text-pink-600 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition">
                         <i class="fas fa-users"></i>
                     </div>
                     <span class="text-sm font-bold text-slate-700">Community</span>
                 </a>
-                <a href="/settings" class="bg-white/80 p-4 rounded-2xl shadow-sm border border-slate-100 hover:border-violet-200 hover:shadow-md transition text-center group">
-                    <div class="w-10 h-10 mx-auto bg-slate-100 text-slate-600 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition">
+                <a href="/settings"
+                    class="bg-white/80 p-4 rounded-2xl shadow-sm border border-slate-100 hover:border-violet-200 hover:shadow-md transition text-center group">
+                    <div
+                        class="w-10 h-10 mx-auto bg-slate-100 text-slate-600 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition">
                         <i class="fas fa-cog"></i>
                     </div>
                     <span class="text-sm font-bold text-slate-700">Settings</span>

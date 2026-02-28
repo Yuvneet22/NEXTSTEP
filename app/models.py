@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, Text, ForeignKey, JSON
+from sqlalchemy import Column, Integer, String, Float, Text, ForeignKey, JSON, Boolean, DateTime
 from sqlalchemy.orm import relationship
 from .database import Base
 
@@ -78,6 +78,7 @@ class Ticket(Base):
     subject = Column(String)
     description = Column(Text)
     status = Column(String, default="Open")
+    admin_reply = Column(Text, nullable=True)
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="tickets")
@@ -108,11 +109,17 @@ class Appointment(Base):
     status = Column(String, default="scheduled")  # scheduled, completed, cancelled
     payment_status = Column(String, default="pending")  # pending, paid
     meeting_link = Column(String, nullable=True)
+    razorpay_order_id = Column(String, nullable=True)
+    razorpay_payment_id = Column(String, nullable=True)
+
+    # Join tracking
+    counsellor_joined = Column(Boolean, default=False)
+    joined_at = Column(DateTime, nullable=True)
 
     student = relationship("User", foreign_keys=[student_id], back_populates="student_appointments")
     counsellor = relationship("User", foreign_keys=[counsellor_id], back_populates="counsellor_appointments")
 
 User.counsellor_profile = relationship("CounsellorProfile", back_populates="user", uselist=False)
-User.student_appointments = relationship("Appointment", foreign_keys="[Appointment.student_id]", back_populates="student")
-User.counsellor_appointments = relationship("Appointment", foreign_keys="[Appointment.counsellor_id]", back_populates="counsellor")
+User.student_appointments = relationship("Appointment", foreign_keys="Appointment.student_id", back_populates="student")
+User.counsellor_appointments = relationship("Appointment", foreign_keys="Appointment.counsellor_id", back_populates="counsellor")
 

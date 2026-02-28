@@ -18,14 +18,15 @@ if DATABASE_URL:
 else:
     SQLALCHEMY_DATABASE_URL = "sqlite:///./learnloop.db"
 
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, 
-    # SQLite-specific argument
-    connect_args={"check_same_thread": False} if SQLALCHEMY_DATABASE_URL.startswith("sqlite") else {},
-    # Pooling for production DBs (Postgres/MySQL)
-    pool_size=10 if not SQLALCHEMY_DATABASE_URL.startswith("sqlite") else None,
-    max_overflow=20 if not SQLALCHEMY_DATABASE_URL.startswith("sqlite") else None
-)
+engine_args = {
+    "connect_args": {"check_same_thread": False} if SQLALCHEMY_DATABASE_URL.startswith("sqlite") else {}
+}
+
+if not SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
+    engine_args["pool_size"] = 10
+    engine_args["max_overflow"] = 20
+
+engine = create_engine(SQLALCHEMY_DATABASE_URL, **engine_args)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()

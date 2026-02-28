@@ -8,6 +8,8 @@ from .database import SessionLocal
 import bcrypt
 import re
 import json
+import uuid
+import datetime
 
 import os
 import json
@@ -18,6 +20,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from authlib.integrations.starlette_client import OAuth
 
 from groq import AsyncGroq
+import razorpay
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
@@ -38,6 +41,11 @@ oauth.register(
         'scope': 'openid email profile'
     }
 )
+
+# Razorpay Client
+RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID", "rzp_test_your_key_id")
+RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "your_key_secret")
+razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
 
 async def generate_content_with_fallback(prompt):
     """
@@ -97,6 +105,7 @@ app.add_middleware(SessionMiddleware, secret_key=os.getenv("SECRET_KEY", "a_very
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
+templates.env.globals["RAZORPAY_KEY_ID"] = RAZORPAY_KEY_ID
 # pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto"]) # Removed
 
 def verify_password(plain_password, hashed_password):
@@ -492,7 +501,19 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
     # Fetch assessment result to show on dashboard
     assessment = db.query(models.AssessmentResult).filter(models.AssessmentResult.user_id == user.id).first()
     
-    return templates.TemplateResponse("dashboard.html", {"request": request, "user": user, "assessment": assessment})
+    # Fetch student appointments
+    appointments = db.query(models.Appointment).filter(models.Appointment.student_id == user.id).all()
+    
+    # Fetch student tickets
+    tickets = db.query(models.Ticket).filter(models.Ticket.user_id == user.id).order_by(models.Ticket.timestamp.desc()).all()
+    
+    return templates.TemplateResponse("dashboard.html", {
+        "request": request, 
+        "user": user, 
+        "assessment": assessment,
+        "appointments": appointments,
+        "tickets": tickets
+    })
 
 @app.get("/admin", response_class=HTMLResponse)
 async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
@@ -579,28 +600,211 @@ async def list_counsellors(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse("counsellors_list.html", {"request": request, "user": user, "counsellors": counsellors})
 
 import datetime
-@app.post("/book_counsellor/{counsellor_id}")
-async def book_counsellor(counsellor_id: int, request: Request, fee: float = Form(...), db: Session = Depends(get_db)):
+import uuid
+
+@app.post("/create_razorpay_order/{counsellor_id}")
+async def create_razorpay_order(counsellor_id: int, request: Request, fee: float = Form(...), db: Session = Depends(get_db)):
+    user = get_current_user(request, db)
+    if fee < 1.0:
+         raise HTTPException(status_code=400, detail="Minimum fee for Razorpay is ₹1.00. Please update the counsellor profile fee.")
+         
+    # Create Razorpay Order
+    data = {
+        "amount": int(fee * 100), # amount in paise
+        "currency": "INR",
+        "receipt": f"receipt_{uuid.uuid4().hex[:10]}",
+        "payment_capture": 1
+    }
+    
+    try:
+        order = razorpay_client.order.create(data=data)
+        return order
+    except Exception as e:
+        print(f"Razorpay Error: {e}")
+        raise HTTPException(status_code=500, detail="Could not create payment order")
+
+@app.post("/book_free_counsellor/{counsellor_id}")
+async def book_free_counsellor(counsellor_id: int, request: Request, appointment_time: str = Form(...), db: Session = Depends(get_db)):
     user = get_current_user(request, db)
     if not user:
          return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
          
-    # Dummy video link
-    import uuid
-    meeting_id = str(uuid.uuid4())[:8]
-    meeting_link = f"https://meet.google.com/{meeting_id}"
+    # Verify counsellor is free
+    counsellor_profile = db.query(models.CounsellorProfile).filter(models.CounsellorProfile.user_id == counsellor_id).first()
+    if not counsellor_profile or (counsellor_profile.fee > 0):
+        # Allow a small margin for float comparison
+        if counsellor_profile and counsellor_profile.fee > 0.01:
+            raise HTTPException(status_code=400, detail="This counsellor is not free. Please use the payment booking flow.")
+        
+    # Meeting link generation (Jitsi Meet for instant, working rooms)
+    meeting_id = str(uuid.uuid4())[:12]
+    meeting_link = f"https://meet.jit.si/NextStep_{meeting_id}"
+    
+    try:
+        appt_time = datetime.datetime.fromisoformat(appointment_time)
+    except ValueError:
+        # Fallback if the format is slightly different
+        appt_time = datetime.datetime.now() + datetime.timedelta(days=1)
     
     appointment = models.Appointment(
         student_id=user.id,
         counsellor_id=counsellor_id,
-        appointment_time=datetime.datetime.now() + datetime.timedelta(days=1), # Dummy next day time
+        appointment_time=appt_time,
         status="scheduled",
-        payment_status="paid",
+        payment_status="free",
         meeting_link=meeting_link
     )
     db.add(appointment)
     db.commit()
     db.refresh(appointment)
+    print(f"DEBUG: Free Appointment created successfully for student {user.id} and counsellor {counsellor_id}")
+    
+    return templates.TemplateResponse("appointment_success.html", {"request": request, "user": user, "appointment": appointment})
+
+@app.get("/join_meeting/{appointment_id}")
+async def join_meeting(appointment_id: int, request: Request, db: Session = Depends(get_db)):
+    user = get_current_user(request, db)
+    if not user:
+        return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+    
+    appointment = db.query(models.Appointment).filter(models.Appointment.id == appointment_id).first()
+    if not appointment:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+    
+    # If the current user is the counsellor, mark as joined
+    if user.id == appointment.counsellor_id:
+        appointment.counsellor_joined = True
+        appointment.joined_at = datetime.datetime.now()
+        db.commit()
+    
+    return RedirectResponse(url=appointment.meeting_link)
+
+@app.get("/appointment_status/{appointment_id}")
+async def appointment_status(appointment_id: int, db: Session = Depends(get_db)):
+    appointment = db.query(models.Appointment).filter(models.Appointment.id == appointment_id).first()
+    if not appointment:
+        return {"error": "Not found"}, 404
+    return {
+        "counsellor_joined": appointment.counsellor_joined,
+        "joined_at": appointment.joined_at.isoformat() if appointment.joined_at else None
+    }
+
+@app.post("/appointment/delete/{appointment_id}")
+async def delete_appointment(appointment_id: int, request: Request, db: Session = Depends(get_db)):
+    user = get_current_user(request, db)
+    if not user:
+        return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+    
+    appointment = db.query(models.Appointment).filter(models.Appointment.id == appointment_id).first()
+    if not appointment:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+    
+    # Check if user is either the student or the counsellor for this appointment
+    if user.id != appointment.student_id and user.id != appointment.counsellor_id:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this appointment")
+    
+    db.delete(appointment)
+    db.commit()
+    
+    return RedirectResponse(url="/dashboard", status_code=status.HTTP_302_FOUND)
+
+@app.post("/admin/tickets/{ticket_id}/reply")
+async def reply_ticket(ticket_id: int, request: Request, reply_content: str = Form(None), db: Session = Depends(get_db)):
+    if reply_content is None:
+        return RedirectResponse(url="/admin", status_code=status.HTTP_302_FOUND)
+    user = get_current_user(request, db)
+    admin_email = os.getenv("ADMIN_EMAIL")
+    if not user or (user.role != "admin" and user.email != admin_email):
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    ticket = db.query(models.Ticket).filter(models.Ticket.id == ticket_id).first()
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    ticket.admin_reply = reply_content
+    db.commit()
+    return RedirectResponse(url="/admin", status_code=status.HTTP_302_FOUND)
+
+@app.post("/admin/tickets/{ticket_id}/close")
+async def close_ticket(ticket_id: int, request: Request, db: Session = Depends(get_db)):
+    user = get_current_user(request, db)
+    admin_email = os.getenv("ADMIN_EMAIL")
+    if not user or (user.role != "admin" and user.email != admin_email):
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    ticket = db.query(models.Ticket).filter(models.Ticket.id == ticket_id).first()
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    ticket.status = "Closed"
+    db.commit()
+    return RedirectResponse(url="/admin", status_code=status.HTTP_302_FOUND)
+
+@app.post("/admin/tickets/{ticket_id}/delete")
+async def delete_ticket(ticket_id: int, request: Request, db: Session = Depends(get_db)):
+    user = get_current_user(request, db)
+    admin_email = os.getenv("ADMIN_EMAIL")
+    if not user or (user.role != "admin" and user.email != admin_email):
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    ticket = db.query(models.Ticket).filter(models.Ticket.id == ticket_id).first()
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    db.delete(ticket)
+    db.commit()
+    return RedirectResponse(url="/admin", status_code=status.HTTP_302_FOUND)
+
+@app.post("/verify_payment")
+async def verify_payment(request: Request, db: Session = Depends(get_db)):
+    user = get_current_user(request, db)
+    if not user:
+         return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+         
+    form_data = await request.form()
+    razorpay_payment_id = form_data.get("razorpay_payment_id")
+    razorpay_order_id = form_data.get("razorpay_order_id")
+    razorpay_signature = form_data.get("razorpay_signature")
+    counsellor_id = int(form_data.get("counsellor_id"))
+    appointment_time_str = form_data.get("appointment_time") # Should be passed from frontend
+    
+    # Verify Signature
+    params_dict = {
+        'razorpay_order_id': razorpay_order_id,
+        'razorpay_payment_id': razorpay_payment_id,
+        'razorpay_signature': razorpay_signature
+    }
+    
+    try:
+        razorpay_client.utility.verify_payment_signature(params_dict)
+    except Exception as e:
+        print(f"Payment verification failed: {e}")
+        return RedirectResponse(url="/counsellors?error=Payment verification failed", status_code=status.HTTP_302_FOUND)
+        
+    # Payment Successful, create appointment
+    meeting_id = str(uuid.uuid4())[:12]
+    meeting_link = f"https://meet.jit.si/NextStep_{meeting_id}"
+    
+    # Parse appointment time or use a default
+    if appointment_time_str:
+        appt_time = datetime.datetime.fromisoformat(appointment_time_str)
+    else:
+        appt_time = datetime.datetime.now() + datetime.timedelta(days=1)
+        
+    appointment = models.Appointment(
+        student_id=user.id,
+        counsellor_id=counsellor_id,
+        appointment_time=appt_time,
+        status="scheduled",
+        payment_status="paid",
+        meeting_link=meeting_link,
+        razorpay_order_id=razorpay_order_id,
+        razorpay_payment_id=razorpay_payment_id
+    )
+    db.add(appointment)
+    db.commit()
+    db.refresh(appointment)
+    print(f"DEBUG: Appointment created successfully for student {user.id} and counsellor {counsellor_id}")
     
     return templates.TemplateResponse("appointment_success.html", {"request": request, "user": user, "appointment": appointment})
 
