@@ -1,8 +1,8 @@
 <div align="center">
 
-## ✨ CareStance
+# ✨CareStance✨
 
-<img src="https://github.com/Yuvneet22/CareStance/blob/main/carestance_no_bg.png" width="520"/>
+<img src="https://github.com/Yuvneet22/NEXTSTEP/blob/main/app/static/images/image.png" width="200"/>
 
 </div>
 
