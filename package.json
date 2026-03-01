@@ -1,5 +1,5 @@
 {
-  "name": "nextstep",
+  "name": "carestance",
   "version": "1.0.0",
   "description": "A comprehensive AI-powered assessment and learning platform built with FastAPI. Designed to evaluate and track student progress through multiple assessment phases with AI-generated feedback using Google's Generative AI.",
   "main": "index.js",
@@ -8,16 +8,16 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Yuvneet22/NEXTSTEP.git"
+    "url": "git+https://github.com/Yuvneet22/CareStance.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "bugs": {
-    "url": "https://github.com/Yuvneet22/NEXTSTEP/issues"
+    "url": "https://github.com/Yuvneet22/CareStance/issues"
   },
-  "homepage": "https://github.com/Yuvneet22/NEXTSTEP#readme",
+  "homepage": "https://github.com/Yuvneet22/CareStance#readme",
   "devDependencies": {
     "tailwindcss": "^4.1.18"
   }

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard | NextStep{% endblock %}
+{% block title %}Dashboard | CareStance{% endblock %}
 
 {% block content %}
 <!-- Main Container -->
@@ -21,7 +21,7 @@
                     {% if user %}
                     Welcome back, {{ user.full_name.split()[0] if user.full_name else 'User' }}! 👋
                     {% else %}
-                    Welcome to NextStep! 👋
+                    Welcome to CareStance! 👋
                     {% endif %}
                 </h1>
                 <p class="mt-2 text-slate-300 max-w-xl text-lg">

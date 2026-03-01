@@ -1,23 +1,29 @@
 {% extends "base.html" %}
 
-{% block title %}Your Career Blueprint | NextStep{% endblock %}
+{% block title %}Your Career Blueprint | CareStance{% endblock %}
 
 {% block content %}
 <div class="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
     <div class="max-w-5xl mx-auto space-y-8">
-        
+
         <!-- 1. HERO SECTION: The Main Result -->
         <div class="relative bg-white rounded-3xl overflow-hidden shadow-2xl border border-slate-200">
             <!-- Decorative Background -->
             <div class="absolute inset-0 bg-gradient-to-r from-violet-600 to-indigo-700">
-                <div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(#ffffff 1px, transparent 1px); background-size: 24px 24px;"></div>
+                <div class="absolute inset-0 opacity-20"
+                    style="background-image: radial-gradient(#ffffff 1px, transparent 1px); background-size: 24px 24px;">
+                </div>
                 <!-- Abstract Blobs -->
-                <div class="absolute top-0 right-0 -mt-20 -mr-20 w-80 h-80 bg-white opacity-10 rounded-full blur-3xl"></div>
-                <div class="absolute bottom-0 left-0 -mb-20 -ml-20 w-80 h-80 bg-pink-500 opacity-20 rounded-full blur-3xl"></div>
+                <div class="absolute top-0 right-0 -mt-20 -mr-20 w-80 h-80 bg-white opacity-10 rounded-full blur-3xl">
+                </div>
+                <div
+                    class="absolute bottom-0 left-0 -mb-20 -ml-20 w-80 h-80 bg-pink-500 opacity-20 rounded-full blur-3xl">
+                </div>
             </div>
 
             <div class="relative z-10 px-6 py-16 text-center">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-indigo-100 text-xs font-bold uppercase tracking-widest mb-6 backdrop-blur-md">
+                <div
+                    class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-indigo-100 text-xs font-bold uppercase tracking-widest mb-6 backdrop-blur-md">
                     <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                     Assessment Complete
                 </div>
@@ -29,7 +35,8 @@
 
                 <!-- Badges -->
                 <div class="flex flex-wrap justify-center gap-4">
-                    <div class="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl px-6 py-3 flex items-center gap-3 text-white">
+                    <div
+                        class="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl px-6 py-3 flex items-center gap-3 text-white">
                         <div class="p-2 bg-white/20 rounded-lg">
                             <i class="fas fa-fingerprint"></i>
                         </div>
@@ -38,7 +45,8 @@
                             <p class="font-bold">{{ result.personality }}</p>
                         </div>
                     </div>
-                    <div class="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl px-6 py-3 flex items-center gap-3 text-white">
+                    <div
+                        class="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl px-6 py-3 flex items-center gap-3 text-white">
                         <div class="p-2 bg-white/20 rounded-lg">
                             <i class="fas fa-compass"></i>
                         </div>
@@ -53,7 +61,7 @@
 
         <!-- 2. ANALYSIS GRID -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
+
             <!-- Left: Why this fits (Phase 2) -->
             <div class="lg:col-span-2 bg-white rounded-3xl p-8 shadow-lg border border-slate-100">
                 <h3 class="flex items-center gap-2 text-xl font-bold text-slate-900 mb-6">
@@ -67,12 +75,13 @@
                 <div class="mt-8 pt-8 border-t border-slate-100">
                     <div class="flex justify-between items-end mb-2">
                         <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest">AI Match Confidence</h4>
-                        <span class="text-2xl font-black text-violet-600">{{ ((result.confidence or 0) * 100) | round|int }}%</span>
+                        <span class="text-2xl font-black text-violet-600">{{ ((result.confidence or 0) * 100) |
+                            round|int }}%</span>
                     </div>
                     <div class="h-4 bg-slate-100 rounded-full overflow-hidden shadow-inner">
                         <div class="h-full bg-gradient-to-r from-violet-500 via-indigo-500 to-purple-600 rounded-full relative"
-                             style="width: {{ ((result.confidence or 0) * 100) | round|int }}%">
-                             <div class="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]"></div>
+                            style="width: {{ ((result.confidence or 0) * 100) | round|int }}%">
+                            <div class="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]"></div>
                         </div>
                     </div>
                 </div>
@@ -81,22 +90,27 @@
             <!-- Right: Phase 3 (Deep Dive) - Conditionally Rendered -->
             <div class="lg:col-span-1">
                 {% if result.phase3_analysis %}
-                <div class="bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-8 shadow-lg text-white h-full border border-slate-700 relative overflow-hidden">
-                    <div class="absolute top-0 right-0 w-32 h-32 bg-indigo-500 rounded-full blur-[60px] opacity-30"></div>
-                    
+                <div
+                    class="bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-8 shadow-lg text-white h-full border border-slate-700 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-indigo-500 rounded-full blur-[60px] opacity-30">
+                    </div>
+
                     <h3 class="relative z-10 flex items-center gap-2 text-lg font-bold mb-4 text-indigo-300">
                         <i class="fas fa-layer-group"></i> Deep Dive Insights
                     </h3>
                     <div class="relative z-10 prose prose-invert text-sm text-slate-300 leading-relaxed">
                         {{ result.phase3_analysis|truncate(200) }}
                         <br>
-                        <span class="text-xs text-slate-500 italic mt-2 block">(Full analysis utilized in final recommendation)</span>
+                        <span class="text-xs text-slate-500 italic mt-2 block">(Full analysis utilized in final
+                            recommendation)</span>
                     </div>
                 </div>
                 {% else %}
                 <!-- Locked State for Phase 3 -->
-                <div class="bg-slate-50 rounded-3xl p-8 shadow-inner border border-slate-200 h-full flex flex-col items-center justify-center text-center opacity-75">
-                    <div class="w-16 h-16 bg-slate-200 rounded-full flex items-center justify-center text-slate-400 text-2xl mb-4">
+                <div
+                    class="bg-slate-50 rounded-3xl p-8 shadow-inner border border-slate-200 h-full flex flex-col items-center justify-center text-center opacity-75">
+                    <div
+                        class="w-16 h-16 bg-slate-200 rounded-full flex items-center justify-center text-slate-400 text-2xl mb-4">
                         <i class="fas fa-lock"></i>
                     </div>
                     <h3 class="font-bold text-slate-700">Deep Dive Pending</h3>
@@ -109,12 +123,13 @@
         <!-- 3. PROGRESS WORKFLOW (The "Next Steps") -->
         <div class="bg-white rounded-3xl p-8 shadow-lg border border-slate-100">
             <h3 class="text-lg font-bold text-slate-900 mb-6">Assessment Roadmap</h3>
-            
+
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                
+
                 <!-- Step 1: Done -->
                 <div class="flex items-center gap-4 p-4 rounded-2xl bg-emerald-50 border border-emerald-100 opacity-60">
-                    <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold shrink-0">
+                    <div
+                        class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold shrink-0">
                         <i class="fas fa-check"></i>
                     </div>
                     <div>
@@ -125,14 +140,13 @@
 
                 <!-- Step 2: Phase 3 Link -->
                 {% if result.phase_2_category %}
-                <a href="/assessment/phase3" 
-                   class="group flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 border
+                <a href="/assessment/phase3" class="group flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 border
                    {% if result.phase3_analysis %}
                        bg-emerald-50 border-emerald-100
                    {% else %}
                        bg-white border-violet-200 shadow-md shadow-violet-100 hover:shadow-lg hover:border-violet-400 hover:-translate-y-1
                    {% endif %}">
-                    
+
                     <div class="w-10 h-10 rounded-full shrink-0 flex items-center justify-center font-bold transition-colors
                         {% if result.phase3_analysis %}
                             bg-emerald-100 text-emerald-600
@@ -141,11 +155,12 @@
                         {% endif %}">
                         {% if result.phase3_analysis %}<i class="fas fa-check"></i>{% else %}3{% endif %}
                     </div>
-                    
+
                     <div>
                         <p class="text-sm font-bold text-slate-900">Phase 3: Scenarios</p>
                         <p class="text-xs text-slate-500">
-                            {% if result.phase3_analysis %}Completed{% else %}<span class="text-violet-600 font-semibold">Start Now &rarr;</span>{% endif %}
+                            {% if result.phase3_analysis %}Completed{% else %}<span
+                                class="text-violet-600 font-semibold">Start Now &rarr;</span>{% endif %}
                         </p>
                     </div>
                 </a>
@@ -153,14 +168,13 @@
 
                 <!-- Step 3: Final Link -->
                 {% if result.phase3_analysis %}
-                <a href="/assessment/final" 
-                   class="group flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 border
+                <a href="/assessment/final" class="group flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 border
                    {% if result.recommended_stream %}
                        bg-emerald-50 border-emerald-100
                    {% else %}
                        bg-white border-indigo-200 shadow-md shadow-indigo-100 hover:shadow-lg hover:border-indigo-400 hover:-translate-y-1
                    {% endif %}">
-                    
+
                     <div class="w-10 h-10 rounded-full shrink-0 flex items-center justify-center font-bold transition-colors
                         {% if result.recommended_stream %}
                             bg-emerald-100 text-emerald-600
@@ -169,11 +183,12 @@
                         {% endif %}">
                         {% if result.recommended_stream %}<i class="fas fa-check"></i>{% else %}4{% endif %}
                     </div>
-                    
+
                     <div>
                         <p class="text-sm font-bold text-slate-900">Final Verdict</p>
                         <p class="text-xs text-slate-500">
-                            {% if result.recommended_stream %}View Result{% else %}<span class="text-indigo-600 font-semibold">Unlock Recommendation &rarr;</span>{% endif %}
+                            {% if result.recommended_stream %}View Result{% else %}<span
+                                class="text-indigo-600 font-semibold">Unlock Recommendation &rarr;</span>{% endif %}
                         </p>
                     </div>
                 </a>
@@ -197,114 +212,125 @@
             <div class="p-8 sm:p-12">
                 <!-- Logic A: Class 10 (Single Stream + Pros/Cons) -->
                 {% if result.selected_class == '10th' or not result.selected_class %}
-                    <div class="text-center mb-10">
-                        <p class="text-slate-500 uppercase tracking-widest text-xs font-bold mb-2">You should choose</p>
-                        <h1 class="text-4xl md:text-5xl font-black text-slate-900">{{ result.recommended_stream }}</h1>
-                    </div>
-                    
-                    {% if result.final_analysis %}
-                    <div class="bg-indigo-50 rounded-xl p-6 mb-8 border border-indigo-100">
-                        <p class="text-indigo-900 font-medium leading-relaxed">
-                            <i class="fas fa-quote-left text-indigo-300 mr-2"></i>
-                            {{ result.final_analysis }}
-                        </p>
+                <div class="text-center mb-10">
+                    <p class="text-slate-500 uppercase tracking-widest text-xs font-bold mb-2">You should choose</p>
+                    <h1 class="text-4xl md:text-5xl font-black text-slate-900">{{ result.recommended_stream }}</h1>
+                </div>
+
+                {% if result.final_analysis %}
+                <div class="bg-indigo-50 rounded-xl p-6 mb-8 border border-indigo-100">
+                    <p class="text-indigo-900 font-medium leading-relaxed">
+                        <i class="fas fa-quote-left text-indigo-300 mr-2"></i>
+                        {{ result.final_analysis }}
+                    </p>
+                </div>
+                {% endif %}
+
+                <div class="grid md:grid-cols-2 gap-8">
+                    {% if result.stream_pros %}
+                    <div>
+                        <h4 class="font-bold text-emerald-600 mb-4 flex items-center gap-2">
+                            <i class="fas fa-thumbs-up"></i> Why It Fits
+                        </h4>
+                        <ul class="space-y-3">
+                            {% for pro in result.stream_pros %}
+                            <li
+                                class="flex items-start text-sm text-slate-700 bg-emerald-50/50 p-3 rounded-lg border border-emerald-100">
+                                <i class="fas fa-check text-emerald-500 mt-1 mr-3"></i> {{ pro }}
+                            </li>
+                            {% endfor %}
+                        </ul>
                     </div>
                     {% endif %}
 
-                    <div class="grid md:grid-cols-2 gap-8">
-                        {% if result.stream_pros %}
-                        <div>
-                            <h4 class="font-bold text-emerald-600 mb-4 flex items-center gap-2">
-                                <i class="fas fa-thumbs-up"></i> Why It Fits
-                            </h4>
-                            <ul class="space-y-3">
-                                {% for pro in result.stream_pros %}
-                                <li class="flex items-start text-sm text-slate-700 bg-emerald-50/50 p-3 rounded-lg border border-emerald-100">
-                                    <i class="fas fa-check text-emerald-500 mt-1 mr-3"></i> {{ pro }}
-                                </li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                        {% endif %}
-
-                        {% if result.stream_cons %}
-                        <div>
-                            <h4 class="font-bold text-rose-600 mb-4 flex items-center gap-2">
-                                <i class="fas fa-exclamation-triangle"></i> Challenges
-                            </h4>
-                            <ul class="space-y-3">
-                                {% for con in result.stream_cons %}
-                                <li class="flex items-start text-sm text-slate-700 bg-rose-50/50 p-3 rounded-lg border border-rose-100">
-                                    <i class="fas fa-minus text-rose-400 mt-1 mr-3"></i> {{ con }}
-                                </li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                        {% endif %}
+                    {% if result.stream_cons %}
+                    <div>
+                        <h4 class="font-bold text-rose-600 mb-4 flex items-center gap-2">
+                            <i class="fas fa-exclamation-triangle"></i> Challenges
+                        </h4>
+                        <ul class="space-y-3">
+                            {% for con in result.stream_cons %}
+                            <li
+                                class="flex items-start text-sm text-slate-700 bg-rose-50/50 p-3 rounded-lg border border-rose-100">
+                                <i class="fas fa-minus text-rose-400 mt-1 mr-3"></i> {{ con }}
+                            </li>
+                            {% endfor %}
+                        </ul>
                     </div>
+                    {% endif %}
+                </div>
 
                 <!-- Logic B: Class 12+ (Multiple Options) -->
                 {% else %}
-                    <div class="mb-8">
-                        <h2 class="text-3xl font-bold text-slate-900 mb-2">Recommended Career Paths</h2>
-                        <p class="text-slate-500">Based on your detailed psychometrics and scenario responses.</p>
-                    </div>
+                <div class="mb-8">
+                    <h2 class="text-3xl font-bold text-slate-900 mb-2">Recommended Career Paths</h2>
+                    <p class="text-slate-500">Based on your detailed psychometrics and scenario responses.</p>
+                </div>
 
-                    <div class="space-y-6">
-                        {% if result.stream_pros %}
-                            {% for option in result.stream_pros %}
-                            <div class="group bg-white rounded-2xl p-6 shadow-md border border-slate-100 hover:border-indigo-500 hover:shadow-xl transition-all duration-300">
-                                <div class="flex items-start gap-4">
-                                    <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xl group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                                        {{ loop.index }}
-                                    </div>
-                                    <div class="flex-1">
-                                        <h3 class="text-xl font-bold text-slate-900 mb-2">{{ option.title }}</h3>
-                                        <p class="text-slate-600 mb-4 text-sm leading-relaxed">{{ option.reason }}</p>
+                <div class="space-y-6">
+                    {% if result.stream_pros %}
+                    {% for option in result.stream_pros %}
+                    <div
+                        class="group bg-white rounded-2xl p-6 shadow-md border border-slate-100 hover:border-indigo-500 hover:shadow-xl transition-all duration-300">
+                        <div class="flex items-start gap-4">
+                            <div
+                                class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xl group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                                {{ loop.index }}
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-xl font-bold text-slate-900 mb-2">{{ option.title }}</h3>
+                                <p class="text-slate-600 mb-4 text-sm leading-relaxed">{{ option.reason }}</p>
 
-                                        <div class="grid sm:grid-cols-2 gap-4">
-                                            {% if option.pros %}
-                                            <div class="text-xs">
-                                                <span class="font-bold text-emerald-600 block mb-1">PROS</span>
-                                                <ul class="space-y-1 text-slate-500">
-                                                    {% for pro in option.pros %}
-                                                    <li class="flex items-start"><span class="mr-1 text-emerald-400">•</span> {{ pro }}</li>
-                                                    {% endfor %}
-                                                </ul>
-                                            </div>
-                                            {% endif %}
-                                            
-                                            {% if option.cons %}
-                                            <div class="text-xs">
-                                                <span class="font-bold text-rose-500 block mb-1">CONSIDERATIONS</span>
-                                                <ul class="space-y-1 text-slate-500">
-                                                    {% for con in option.cons %}
-                                                    <li class="flex items-start"><span class="mr-1 text-rose-400">•</span> {{ con }}</li>
-                                                    {% endfor %}
-                                                </ul>
-                                            </div>
-                                            {% endif %}
-                                        </div>
+                                <div class="grid sm:grid-cols-2 gap-4">
+                                    {% if option.pros %}
+                                    <div class="text-xs">
+                                        <span class="font-bold text-emerald-600 block mb-1">PROS</span>
+                                        <ul class="space-y-1 text-slate-500">
+                                            {% for pro in option.pros %}
+                                            <li class="flex items-start"><span class="mr-1 text-emerald-400">•</span> {{
+                                                pro }}</li>
+                                            {% endfor %}
+                                        </ul>
                                     </div>
+                                    {% endif %}
+
+                                    {% if option.cons %}
+                                    <div class="text-xs">
+                                        <span class="font-bold text-rose-500 block mb-1">CONSIDERATIONS</span>
+                                        <ul class="space-y-1 text-slate-500">
+                                            {% for con in option.cons %}
+                                            <li class="flex items-start"><span class="mr-1 text-rose-400">•</span> {{
+                                                con }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                    {% endif %}
                                 </div>
                             </div>
-                            {% endfor %}
-                        {% else %}
-                            <div class="text-center py-12 text-slate-400">
-                                <i class="fas fa-sync fa-spin text-2xl mb-2"></i>
-                                <p>Generating career options...</p>
-                            </div>
-                        {% endif %}
+                        </div>
                     </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="text-center py-12 text-slate-400">
+                        <i class="fas fa-sync fa-spin text-2xl mb-2"></i>
+                        <p>Generating career options...</p>
+                    </div>
+                    {% endif %}
+                </div>
                 {% endif %}
             </div>
-            
+
             <!-- Bottom CTA -->
-            <div class="bg-slate-50 px-8 py-6 border-t border-slate-200 text-center flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div
+                class="bg-slate-50 px-8 py-6 border-t border-slate-200 text-center flex flex-col sm:flex-row justify-between items-center gap-4">
                 <p class="text-slate-500 text-sm">Need more clarity? Talk to a human expert.</p>
                 <div class="flex gap-3">
-                    <a href="/assessment" class="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-600 font-bold text-sm hover:bg-white hover:text-slate-900 transition">Retake Test</a>
-                    <a href="/counsellors" class="px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-sm shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition">Book Counsellor</a>
+                    <a href="/assessment"
+                        class="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-600 font-bold text-sm hover:bg-white hover:text-slate-900 transition">Retake
+                        Test</a>
+                    <a href="/counsellors"
+                        class="px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-sm shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition">Book
+                        Counsellor</a>
                 </div>
             </div>
         </div>

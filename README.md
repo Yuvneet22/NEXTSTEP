@@ -1,8 +1,8 @@
 <div align="center">
 
-## ✨ NextStep
+## ✨ CareStance
 
-<img src="https://github.com/Yuvneet22/NEXTSTEP/blob/main/nextstep_no_bg.png" width="520"/>
+<img src="https://github.com/Yuvneet22/CareStance/blob/main/carestance_no_bg.png" width="520"/>
 
 </div>
 
@@ -18,7 +18,7 @@ An AI-powered career assessment and guidance platform built with FastAPI. Design
   - **Phase 3** – In-depth Scenario Analysis tailored to the user's archetype
   - **Phase 4** – Final Stream/Career Assessment with AI-powered recommendations
 - **AI-Powered Analysis**: Dual AI provider system using **Google Gemini** (primary) with automatic fallback to **Groq (Llama 3.3-70B)**
-- **AI Career Chatbot**: Personalized career counseling chatbot (`NextStep AI`) with token-by-token streaming and conversation history
+- **AI Career Chatbot**: Personalized career counseling chatbot (`CareStance AI`) with token-by-token streaming and conversation history
 - **Counsellor Booking**: Integrated booking system with **Razorpay** payment gateway for professional sessions
 - **Live Consultations**: Real-time video calls via **Jitsi Meet** with automatic status tracking
 - **Live Notifications**: Instant "Online" badge and animated join alerts when a counsellor joins the call
@@ -101,7 +101,7 @@ graph TD
 ## Project Structure
 
 ```
-NEXTSTEP/
+CARESTANCE/
 ├── app/                          # Main application package
 │   ├── __init__.py
 │   ├── main.py                   # FastAPI app & all routes
@@ -146,8 +146,8 @@ NEXTSTEP/
 
 ### 1. Clone & Set Up
 ```bash
-git clone https://github.com/Yuvneet22/NEXTSTEP.git
-cd NEXTSTEP
+git clone https://github.com/Yuvneet22/CareStance.git
+cd CareStance
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
@@ -267,7 +267,7 @@ All AI responses are cleaned with robust JSON extraction (handles markdown block
 ---
 
 ## License
-MIT License - 2026 NextStep Team
+MIT License - 2026 CareStance Team
 
 ---
 

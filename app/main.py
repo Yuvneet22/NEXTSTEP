@@ -92,7 +92,7 @@ from data.questions_above_12th import questions_above_12th
 # Create Tables
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="NextStep")
+app = FastAPI(title="CareStance")
 
 from fastapi.middleware.gzip import GZipMiddleware
 app.add_middleware(GZipMiddleware, minimum_size=1000)
@@ -638,7 +638,7 @@ async def book_free_counsellor(counsellor_id: int, request: Request, appointment
         
     # Meeting link generation (Jitsi Meet for instant, working rooms)
     meeting_id = str(uuid.uuid4())[:12]
-    meeting_link = f"https://meet.jit.si/NextStep_{meeting_id}"
+    meeting_link = f"https://meet.jit.si/CareStance_{meeting_id}"
     
     try:
         appt_time = datetime.datetime.fromisoformat(appointment_time)
@@ -783,7 +783,7 @@ async def verify_payment(request: Request, db: Session = Depends(get_db)):
         
     # Payment Successful, create appointment
     meeting_id = str(uuid.uuid4())[:12]
-    meeting_link = f"https://meet.jit.si/NextStep_{meeting_id}"
+    meeting_link = f"https://meet.jit.si/CareStance_{meeting_id}"
     
     # Parse appointment time or use a default
     if appointment_time_str:
@@ -1529,7 +1529,7 @@ async def chatbot_message(request: Request, chat_req: ChatRequest, db: Session =
 
     # 2. Construct System Prompt
     prompt = f"""
-    You are 'NextStep Counselor', a fascinating and expert career mentor.
+    You are 'CareStance Counselor', a fascinating and expert career mentor.
     
     USER CONTEXT:
     {context_str}
