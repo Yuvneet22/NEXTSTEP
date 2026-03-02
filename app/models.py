@@ -83,10 +83,23 @@ class Ticket(Base):
 
     user = relationship("User", back_populates="tickets")
 
-# Update User model to include messages and feedback relationships
+class CareerPath(Base):
+    __tablename__ = "career_paths"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    career_title = Column(String)
+    path_data = Column(JSON) # Detailed path steps
+    reminders = Column(JSON) # List of reminders/milestones
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", back_populates="career_paths")
+
+# Update User model to include messages, feedback, and career paths relationships
 User.messages = relationship("ChatMessage", back_populates="user", order_by="ChatMessage.timestamp")
 User.feedbacks = relationship("Feedback", back_populates="user", order_by="Feedback.timestamp")
 User.tickets = relationship("Ticket", back_populates="user", order_by="Ticket.timestamp")
+User.career_paths = relationship("CareerPath", back_populates="user", order_by="CareerPath.created_at.desc()")
 
 class CounsellorProfile(Base):
     __tablename__ = "counsellor_profiles"
@@ -96,6 +109,7 @@ class CounsellorProfile(Base):
     fee = Column(Float, default=0.0)
     # Storing availability as JSON. E.g., {"Monday": ["10:00", "11:00"], "Tuesday": []}
     availability = Column(JSON, nullable=True)
+    account_details = Column(JSON, nullable=True) # e.g. {"bank_name": "...", "account_num": "...", "ifsc": "...", "upi": "..."}
 
     user = relationship("User", back_populates="counsellor_profile")
 

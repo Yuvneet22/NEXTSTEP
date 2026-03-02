@@ -25,8 +25,8 @@ def update_schema():
     # Tickets table
     try_add_column("tickets", "admin_reply", "TEXT")
     
-    # Users table
-    try_add_column("users", "role", "VARCHAR DEFAULT 'student'")
+    # Counsellor Profiles
+    try_add_column("counsellor_profiles", "account_details", "JSON")
     
     print("Schema update complete.")
 

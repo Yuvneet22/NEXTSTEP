@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, status, Request, Form, Response
 from pydantic import BaseModel
+from typing import List, Optional
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -499,14 +500,21 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
     
     if user.role == "counsellor":
         profile = db.query(models.CounsellorProfile).filter(models.CounsellorProfile.user_id == user.id).first()
-        appointments = db.query(models.Appointment).filter(models.Appointment.counsellor_id == user.id).all()
+        # Only show active/scheduled appointments on dashboard
+        appointments = db.query(models.Appointment).filter(
+            models.Appointment.counsellor_id == user.id,
+            models.Appointment.status == "scheduled"
+        ).all()
         return templates.TemplateResponse("counsellor_dashboard.html", {"request": request, "user": user, "profile": profile, "appointments": appointments})
     
     # Fetch assessment result to show on dashboard
     assessment = db.query(models.AssessmentResult).filter(models.AssessmentResult.user_id == user.id).first()
     
-    # Fetch student appointments
-    appointments = db.query(models.Appointment).filter(models.Appointment.student_id == user.id).all()
+    # Fetch student appointments (active only)
+    appointments = db.query(models.Appointment).filter(
+        models.Appointment.student_id == user.id,
+        models.Appointment.status == "scheduled"
+    ).all()
     
     # Fetch student tickets
     tickets = db.query(models.Ticket).filter(models.Ticket.user_id == user.id).order_by(models.Ticket.timestamp.desc()).all()
@@ -576,18 +584,35 @@ async def counsellor_update(
     request: Request,
     fee: float = Form(0.0),
     availability_text: str = Form(""),
+    bank_name: str = Form(""),
+    account_num: str = Form(""),
+    ifsc_code: str = Form(""),
+    upi_id: str = Form(""),
     db: Session = Depends(get_db)
 ):
     user = get_current_user(request, db)
     if not user or user.role != "counsellor":
          return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
     
+    account_data = {
+        "bank_name": bank_name,
+        "account_num": account_num,
+        "ifsc": ifsc_code,
+        "upi": upi_id
+    }
+    
     profile = db.query(models.CounsellorProfile).filter(models.CounsellorProfile.user_id == user.id).first()
     if profile:
         profile.fee = fee
         profile.availability = {"text": availability_text}
+        profile.account_details = account_data
     else:
-        profile = models.CounsellorProfile(user_id=user.id, fee=fee, availability={"text": availability_text})
+        profile = models.CounsellorProfile(
+            user_id=user.id, 
+            fee=fee, 
+            availability={"text": availability_text},
+            account_details=account_data
+        )
         db.add(profile)
     
     db.commit()
@@ -708,6 +733,26 @@ async def delete_appointment(appointment_id: int, request: Request, db: Session 
         raise HTTPException(status_code=403, detail="Not authorized to delete this appointment")
     
     db.delete(appointment)
+    db.commit()
+    
+    return RedirectResponse(url="/dashboard", status_code=status.HTTP_302_FOUND)
+
+@app.post("/appointment/complete/{appointment_id}")
+async def complete_appointment(appointment_id: int, request: Request, db: Session = Depends(get_db)):
+    user = get_current_user(request, db)
+    # Only counsellors can mark sessions as complete
+    if not user or user.role != "counsellor":
+        return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+    
+    appointment = db.query(models.Appointment).filter(
+        models.Appointment.id == appointment_id, 
+        models.Appointment.counsellor_id == user.id
+    ).first()
+    
+    if not appointment:
+        raise HTTPException(status_code=404, detail="Appointment not found or not yours")
+    
+    appointment.status = "completed"
     db.commit()
     
     return RedirectResponse(url="/dashboard", status_code=status.HTTP_302_FOUND)
@@ -1687,3 +1732,95 @@ async def submit_ticket(
     
     return RedirectResponse(url="/dashboard", status_code=status.HTTP_302_FOUND)
 
+
+# --- Career Path Generation ---
+
+class CareerPathRequest(BaseModel):
+    career_title: str
+
+@app.post("/assessment/generate_path")
+async def generate_career_path(request: Request, path_req: CareerPathRequest, db: Session = Depends(get_db)):
+    user = get_current_user(request, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    result = db.query(models.AssessmentResult).filter(models.AssessmentResult.user_id == user.id).first()
+    if not result:
+        raise HTTPException(status_code=404, detail="Assessment results not found")
+
+    archetype = result.phase_2_category or "Explorer"
+    personality = result.personality or "Ambivert"
+    current_class = result.selected_class or "10th"
+
+    prompt = f"""
+    You are an expert Career Architect.
+    
+    Student Profile:
+    - Current Stage: {current_class}
+    - Archetype: {archetype}
+    - Personality: {personality}
+    - Goal Career: {path_req.career_title}
+
+    TASK:
+    Generate a highly realistic, step-by-step "Success Roadmap" from their current stage to a professional role in {path_req.career_title}.
+    Provide 5 specific steps.
+    Also, provide 3 critical reminders or milestones for their calendar.
+
+    OUTPUT FORMAT (VALID JSON ONLY):
+    {{
+      "career_title": "{path_req.career_title}",
+      "path_steps": [
+        {{ "step": 1, "action": "Action Name", "description": "Detailed advice (2-3 sentences)" }},
+        ...
+      ],
+      "reminders": [
+        {{ "milestone": "Milestone Name", "reminder": "Specific alert/advice" }},
+        ...
+      ]
+    }}
+    """
+
+    try:
+        clean_text = await generate_content_with_fallback(prompt)
+        path_data = json.loads(clean_text)
+        
+        # Save to DB
+        new_path = models.CareerPath(
+            user_id=user.id,
+            career_title=path_data.get("career_title", path_req.career_title),
+            path_data=path_data.get("path_steps", []),
+            reminders=path_data.get("reminders", [])
+        )
+        db.add(new_path)
+        db.commit()
+        db.refresh(new_path)
+
+        return {"success": True, "path_id": new_path.id}
+    except Exception as e:
+        print(f"Career Path Generation Error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate career path")
+
+@app.get("/career/roadmaps", response_class=HTMLResponse)
+async def view_roadmaps(request: Request, db: Session = Depends(get_db)):
+    user = get_current_user(request, db)
+    if not user:
+        return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+    
+    paths = db.query(models.CareerPath).filter(models.CareerPath.user_id == user.id).all()
+    return templates.TemplateResponse("career_roadmaps.html", {"request": request, "user": user, "paths": paths})
+
+@app.get("/career/roadmap/{path_id}", response_class=HTMLResponse)
+async def view_roadmap_detail(path_id: int, request: Request, db: Session = Depends(get_db)):
+    user = get_current_user(request, db)
+    if not user:
+        return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+    
+    path = db.query(models.CareerPath).filter(models.CareerPath.id == path_id, models.CareerPath.user_id == user.id).first()
+    if not path:
+        raise HTTPException(status_code=404, detail="Roadmap not found")
+        
+    return templates.TemplateResponse("career_roadmap_detail.html", {"request": request, "user": user, "path": path})
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)

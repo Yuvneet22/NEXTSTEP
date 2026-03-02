@@ -31,19 +31,54 @@
                     <input type="text" name="availability_text" placeholder="e.g., Sat-Sun 10am-2pm" required
                         value="{% if profile and profile.availability %}{{ profile.availability.get('text', '') }}{% endif %}"
                         class="mt-1 block w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors">
-                    <p class="text-xs text-slate-500 mt-1">Specify your working days and hours so students know when to
-                        book you.</p>
+                    <p class="text-xs text-slate-500 mt-1">Specify your working days and hours so students know when to book you.</p>
                 </div>
+
+                <!-- Account / Bank Details -->
+                <div class="mt-8 pt-6 border-t border-slate-100">
+                    <h5 class="text-md font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <i class="fas fa-university text-indigo-500"></i> Payout Account Details
+                    </h5>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase">Bank Name</label>
+                            <input type="text" name="bank_name" placeholder="e.g., HDFC Bank" 
+                                value="{% if profile and profile.account_details %}{{ profile.account_details.get('bank_name', '') }}{% endif %}"
+                                class="mt-1 block w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase">Account Number</label>
+                            <input type="text" name="account_num" placeholder="XXXX XXXX XXXX" 
+                                value="{% if profile and profile.account_details %}{{ profile.account_details.get('account_num', '') }}{% endif %}"
+                                class="mt-1 block w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase">IFSC Code</label>
+                            <input type="text" name="ifsc_code" placeholder="HDFC0001234" 
+                                value="{% if profile and profile.account_details %}{{ profile.account_details.get('ifsc', '') }}{% endif %}"
+                                class="mt-1 block w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase">UPI ID</label>
+                            <input type="text" name="upi_id" placeholder="yourname@upi" 
+                                value="{% if profile and profile.account_details %}{{ profile.account_details.get('upi', '') }}{% endif %}"
+                                class="mt-1 block w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                    </div>
+                </div>
+
                 <button type="submit"
                     class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md shadow-indigo-200 transition-all hover:scale-[1.02]">
-                    Update Profile
+                    Update Profile & Account
                 </button>
             </form>
         </div>
 
         <!-- Upcoming Appointments -->
         <div class="bg-white/80 rounded-2xl p-6 shadow-sm border border-slate-200">
-            <h4 class="text-lg font-bold text-slate-900 mb-4">Your Appointments</h4>
+            <h4 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                <i class="fas fa-calendar-alt text-violet-500"></i> Active Appointments
+            </h4>
             {% if appointments %}
             <div class="space-y-4">
                 {% for apt in appointments %}
@@ -58,15 +93,23 @@
                             }}</p>
                     </div>
                     <div class="flex flex-col items-end gap-2">
-                        <a href="/join_meeting/{{ apt.id }}" target="_blank"
-                            class="px-4 py-2 bg-violet-100 hover:bg-violet-200 text-violet-700 font-bold rounded-xl transition-colors">
-                            Join Video Call
-                        </a>
+                        <div class="flex gap-2">
+                            <form action="/appointment/complete/{{ apt.id }}" method="POST">
+                                <button type="submit" 
+                                    class="px-4 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 font-bold rounded-xl transition-all hover:scale-[1.05]">
+                                    Mark as Done
+                                </button>
+                            </form>
+                            <a href="/join_meeting/{{ apt.id }}" target="_blank"
+                                class="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-xl transition-colors shadow-sm">
+                                Join Video Call
+                            </a>
+                        </div>
                         <form action="/appointment/delete/{{ apt.id }}" method="POST"
                             onsubmit="return confirm('Delete this appointment?')">
                             <button type="submit"
                                 class="text-[10px] text-slate-400 hover:text-red-500 font-bold uppercase tracking-wider transition-colors">
-                                <i class="fas fa-times mr-1"></i> Delete
+                                <i class="fas fa-times mr-1"></i> Delete Permanent
                             </button>
                         </form>
                     </div>
