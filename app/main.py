@@ -23,7 +23,8 @@ from authlib.integrations.starlette_client import OAuth
 from groq import AsyncGroq
 import razorpay
 from . import models
-from .email_utils import send_email, get_booking_template, get_cancellation_template
+from .email_utils import send_email, get_booking_template, get_cancellation_template, get_reset_password_template
+from itsdangerous import URLSafeTimedSerializer
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
@@ -44,6 +45,9 @@ oauth.register(
         'scope': 'openid email profile'
     }
 )
+
+# Password Reset Serializer
+serializer = URLSafeTimedSerializer(os.getenv("SECRET_KEY", "a_very_secret_key_for_sessions"))
 
 # Razorpay Client
 RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID", "rzp_test_your_key_id")
@@ -198,6 +202,80 @@ async def logout(response: Response):
     response = RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
     response.delete_cookie("user_id")
     return response
+
+@app.get("/forgot-password", response_class=HTMLResponse)
+async def forgot_password_page(request: Request):
+    return templates.TemplateResponse("forgot_password.html", {"request": request})
+
+@app.post("/forgot-password")
+async def forgot_password(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    email: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if user:
+        token = serializer.dumps(email, salt="password-reset-salt")
+        reset_link = f"{request.base_url}reset-password/{token}"
+        
+        # Send Email
+        background_tasks.add_task(
+            send_email,
+            email,
+            "Reset Your CareStance Password 🔒",
+            get_reset_password_template(user.full_name, reset_link)
+        )
+    
+    # Always show success message for security (don't reveal if email exists)
+    return templates.TemplateResponse("forgot_password.html", {
+        "request": request, 
+        "message": "If an account exists with that email, a reset link has been sent."
+    })
+
+@app.get("/reset-password/{token}", response_class=HTMLResponse)
+async def reset_password_page(request: Request, token: str):
+    try:
+        # Token valid for 1 hour (3600 seconds)
+        email = serializer.loads(token, salt="password-reset-salt", max_age=3600)
+    except Exception:
+        return templates.TemplateResponse("forgot_password.html", {
+            "request": request,
+            "error": "The reset link is invalid or has expired."
+        })
+    return templates.TemplateResponse("reset_password.html", {"request": request, "token": token})
+
+@app.post("/reset-password/{token}")
+async def reset_password(
+    request: Request,
+    token: str,
+    password: str = Form(...),
+    confirm_password: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    try:
+        email = serializer.loads(token, salt="password-reset-salt", max_age=3600)
+    except Exception:
+         return templates.TemplateResponse("forgot_password.html", {
+            "request": request,
+            "error": "The reset link is invalid or has expired."
+        })
+    
+    if password != confirm_password:
+        return templates.TemplateResponse("reset_password.html", {
+            "request": request, 
+            "token": token, 
+            "error": "Passwords do not match"
+        })
+    
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user.hashed_password = get_password_hash(password)
+    db.commit()
+    
+    return RedirectResponse(url="/login?message=Password updated successfully", status_code=status.HTTP_302_FOUND)
 
 @app.get("/login/google")
 async def login_google(request: Request):
