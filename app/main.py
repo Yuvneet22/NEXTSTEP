@@ -49,35 +49,39 @@ razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
 
 async def generate_content_with_fallback(prompt):
     """
-    Attempts to generate content using Gemini (Async).
-    Falls back to Groq (Async) if Gemini fails.
-    Returns cleaned text (JSON-ready).
+    Attempts to generate content using Gemini (Async) with high-tier fallback to Groq.
+    Enhanced with robust regex for cleaner JSON extraction.
     """
     try:
-        # Try Gemini First
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        # Using 2.0 Flash for better reasoning speed and instruction following
+        model = genai.GenerativeModel("gemini-1.5-flash") # or gemini-2.0-flash if available
         response = await model.generate_content_async(prompt)
         text = response.text
     except Exception as e:
-        print(f"Gemini Async Error (Switching to Groq): {e}")
-        if not groq_client:
-            raise e # No fallback available
+        print(f"Gemini Error (Switching to Groq): {e}")
+        if not groq_client: raise e
         
         try:
-            # Fallback to Groq Async (Using global client)
+            # Fallback to high-reasoning Llama model
             chat_completion = await groq_client.chat.completions.create(
                 messages=[{"role": "user", "content": prompt}],
-                model="llama-3.1-8b-instant", # Faster model for fallback
+                model="llama-3.3-70b-versatile",
             )
             text = chat_completion.choices[0].message.content
         except Exception as groq_e:
-            raise Exception(f"Both APIs failed. Gemini: {e}, Groq: {groq_e}")
+            raise Exception(f"Dual API Failure. Gemini: {e}, Groq: {groq_e}")
 
-    # Robust JSON Extraction
+    # Enhanced JSON Extraction Logic
     try:
-        match = re.search(r"\{.*\}", text, re.DOTALL)
-        if match: text = match.group(0)
-        text = text.replace("```json", "").replace("```", "").strip()
+        # Remove potential markdown wrappers
+        text = re.sub(r'```json\s*|\s*```', '', text).strip()
+        # Find the first { and the last }
+        start_idx = text.find('{')
+        end_idx = text.rfind('}')
+        if start_idx != -1 and end_idx != -1:
+            text = text[start_idx:end_idx + 1]
+        
+        # Clean trailing commas before closing braces/brackets
         text = re.sub(r",\s*([\]}])", r"\1", text)
         return text
     except Exception:
@@ -871,16 +875,21 @@ async def assessment_phase3_submit(
     
     # Generate Phase 3 Analysis using Gemini
     category = result.phase_2_category
+    # Inside assessment_phase3_submit route
     prompt_p3 = f"""
-    You are an expert career counselor who is fascinated by student potential. 
-    Analyze these deep-dive scenario responses for a student characterized as '{category}'.
-    
-    Scenarios & Answers:
+    You are an expert Career Mentor. Deep-dive into the scenario responses for a '{category}' profile.
+
+    SCENARIO RESPONSES:
     {json.dumps(answers, indent=2)}
-    
-    Provide a warm, sophisticated, and encouraging insight (3-4 sentences) that highlights the fascinating nuances of their personality. 
-    Start with a professional greeting or observation that feels like a real counselor session.
-    IMPORTANT: Do NOT enclose your response in quotes or inverted commas. Write it as direct text.
+
+    TASK:
+    Write a personal, narrative analysis (no bullet points).
+    1. Acknowledge their specific choice in the most challenging scenario.
+    2. Explain what this reveals about their 'Internal Compass' and leadership style.
+    3. Use warm, sophisticated language that builds the student's confidence.
+
+    STRICT RULE: No quotes, no markdown headers, max 4 sentences. 
+    Start directly with: "It is fascinating to observe how you navigate..."
     """
     
     try:
@@ -1529,26 +1538,25 @@ async def chatbot_message(request: Request, chat_req: ChatRequest, db: Session =
 
     # 2. Construct System Prompt
     prompt = f"""
-    You are 'CareStance Counselor', a fascinating and expert career mentor.
-    
-    USER CONTEXT:
-    {context_str}
+You are the 'CareStance Mentor'. You are professional, deeply empathetic, and highly knowledgeable about global career trends.
 
-    CONVERSATION HISTORY:
-    {history_str}
+STUDENT PROFILE:
+- Name: {user.full_name}
+- Grade Level: {result.selected_class if result else 'Not Selected'}
+- Archetype: {result.phase_2_category if result else 'Analyzing...'}
+- Calculated Recommendation: {result.recommended_stream if result else 'In progress'}
 
-    YOUR GOAL:
-    Help the student with their career questions.
-    - If they have assessment results, REFER TO THEM to make advice personalized.
-    - If they don't, ask clarifying questions to help them.
-    - Be encouraging, positive, and realistic.
-    - Keep answers concise (under 200 words) unless asked for deep detail.
-    - Use Markdown for bolding key terms or lists.
-    - Reply to the latest STUDENT MESSAGE.
+GUIDELINES:
+1. PERSONALIZATION: If the student asks 'What should I do?', refer to their Archetype ({result.phase_2_category}) specifically.
+2. TONE: Be a mentor, not an encyclopedia. Use phrases like "Looking at your preference for {result.personality if result else 'collaboration'}..."
+3. STRUCTURE: Use bold text for key career roles and bullet points for steps.
+4. SCOPE: Focus 100% on careers, education, and professional growth.
 
-    STUDENT MESSAGE:
-    {user_message}
-    """
+LATEST STUDENT MESSAGE: "{user_message}"
+CONVERSATION HISTORY: {history_str}
+
+Response (Concise, Markdown formatted):
+"""
     
     # 3. Stream AI Response with Fallback
     user_id = user.id
