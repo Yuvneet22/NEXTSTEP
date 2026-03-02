@@ -113,3 +113,6 @@ section_e_questions = [
         "insight": "Identifies what the student values as 'essential' to a meaningful life."
     }
 ]
+
+# Alias for main.py import
+questions_12th = section_e_questions

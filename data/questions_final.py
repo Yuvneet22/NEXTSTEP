@@ -120,3 +120,24 @@ academic_assessment_questions = [
         "mapped_streams": ["PCM", "VOC"]
     }
 ]
+
+# Split for different assessment sections
+section_a_questions = academic_assessment_questions[:4] # Core logic/science
+section_b_questions = academic_assessment_questions[4:7] # Application/Data
+section_c_questions = academic_assessment_questions[7:9] # Environment/Preference
+section_d_questions = academic_assessment_questions[9:10] # Hands-on/Technical
+
+all_questions = {
+    "Section A": {"title": "Section A: Logic & Foundational Science", "questions": section_a_questions},
+    "Section B": {"title": "Section B: Applied Concepts & Analysis", "questions": section_b_questions},
+    "Section C": {"title": "Section C: Interdisciplinary Interests", "questions": section_b_questions}, # Note: using b intentionally if needed or split more
+    "Section D": {"title": "Section D: Technical Skills & Vocational Path", "questions": section_d_questions}
+}
+
+# Fix section mapping for clarity
+all_questions = {
+    "Section A": {"title": "Section A", "questions": section_a_questions},
+    "Section B": {"title": "Section B", "questions": section_b_questions},
+    "Section C": {"title": "Section C", "questions": section_c_questions},
+    "Section D": {"title": "Section D", "questions": section_d_questions}
+}
