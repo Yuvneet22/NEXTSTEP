@@ -302,8 +302,17 @@ async def login_google(request: Request):
 
 @app.get("/auth/callback")
 async def auth_callback(request: Request, db: Session = Depends(get_db)):
+    # Same redirect_uri logic as login_google to ensure they match
+    base_url = os.getenv("BASE_URL")
+    if base_url:
+        redirect_uri = f"{base_url.rstrip('/')}/auth/callback"
+    else:
+        redirect_uri = str(request.url_for('auth_callback'))
+        if "vercel.app" in str(request.base_url) or os.getenv("VERCEL"):
+            redirect_uri = redirect_uri.replace("http://", "https://")
+
     try:
-        token = await oauth.google.authorize_access_token(request)
+        token = await oauth.google.authorize_access_token(request, redirect_uri=redirect_uri)
     except Exception as e:
         print(f"OAuth Error: {e}")
         return RedirectResponse(url='/login?error=OAuth failed', status_code=status.HTTP_302_FOUND)
