@@ -42,7 +42,7 @@
                         <div>
                             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Certificates</p>
                             <div class="flex flex-wrap gap-2 mt-1">
-                                {% for cert in prof.certificates %}
+                                {% for cert in prof.certificates or [] %}
                                 <a href="{{ cert }}" target="_blank" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-bold text-slate-600 transition-colors flex items-center gap-1">
                                     <i class="fas {% if cert.endswith('.pdf') %}fa-file-pdf text-red-500{% else %}fa-image text-blue-500{% endif %}"></i>
                                     View Doc {{ loop.index }}
@@ -230,7 +230,7 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex text-yellow-400">
-                                    {% for i in range(fb.rating) %}
+                                    {% for i in range(fb.rating or 0) %}
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 fill-current"
                                         viewBox="0 0 20 20">
                                         <path
