@@ -633,7 +633,8 @@ async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
     # Safety Check: Allow access if user email matches ADMIN_EMAIL env var
     admin_email = os.getenv("ADMIN_EMAIL")
     if user.role != "admin" and (not admin_email or user.email != admin_email):
-        return RedirectResponse(url="/dashboard", status_code=status.HTTP_302_FOUND)
+        print(f"DEBUG: Admin access denied for {user.email}. Role: {user.role}, ADMIN_EMAIL: {admin_email}")
+        return RedirectResponse(url="/dashboard?error=Admin access denied", status_code=status.HTTP_302_FOUND)
 
     # 2. Fetch all users
     all_users = db.query(models.User).all()
@@ -734,15 +735,19 @@ async def upload_profile_photo(
     
     # Ensure directory exists
     upload_dir = os.path.join(BASE_DIR, "static", "uploads", "profile_photos")
-    os.makedirs(upload_dir, exist_ok=True)
-    
-    file_path = os.path.join(upload_dir, filename)
-    
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-    
-    user.profile_photo = f"/static/uploads/profile_photos/{filename}"
-    db.commit()
+    try:
+        os.makedirs(upload_dir, exist_ok=True)
+        file_path = os.path.join(upload_dir, filename)
+        
+        contents = await file.read()
+        with open(file_path, "wb") as buffer:
+            buffer.write(contents)
+        
+        user.profile_photo = f"/static/uploads/profile_photos/{filename}"
+        db.commit()
+    except Exception as e:
+        print(f"UPLOAD ERROR: {e}")
+        return RedirectResponse(url="/dashboard?error=Upload failed", status_code=status.HTTP_302_FOUND)
     
     return RedirectResponse(url="/dashboard", status_code=status.HTTP_302_FOUND)
 
@@ -766,24 +771,29 @@ async def upload_certificates(
     
     # Ensure directory exists
     upload_dir = os.path.join(BASE_DIR, "static", "uploads", "certificates")
-    os.makedirs(upload_dir, exist_ok=True)
+    try:
+        os.makedirs(upload_dir, exist_ok=True)
 
-    # If single file is uploaded, it might not be a list in some cases, but starlette handles it
-    for file in files:
-        if file.filename:
-            file_extension = os.path.splitext(file.filename)[1]
-            filename = f"cert_{user.id}_{uuid.uuid4().hex}{file_extension}"
-            file_path = os.path.join(upload_dir, filename)
-            
-            with open(file_path, "wb") as buffer:
-                shutil.copyfileobj(file.file, buffer)
-            
-            cert_paths.append(f"/static/uploads/certificates/{filename}")
-    
-    profile.certificates = cert_paths
-    profile.experience = experience
-    profile.verification_status = "pending"
-    db.commit()
+        for file in files:
+            if file.filename:
+                file_extension = os.path.splitext(file.filename)[1]
+                filename = f"cert_{user.id}_{uuid.uuid4().hex}{file_extension}"
+                file_path = os.path.join(upload_dir, filename)
+                
+                contents = await file.read()
+                with open(file_path, "wb") as buffer:
+                    buffer.write(contents)
+                
+                cert_paths.append(f"/static/uploads/certificates/{filename}")
+        
+        # Ensure SQLAlchemy detects the list change
+        profile.certificates = list(cert_paths)
+        profile.experience = experience
+        profile.verification_status = "pending"
+        db.commit()
+    except Exception as e:
+        print(f"CERTIFICATE UPLOAD ERROR: {e}")
+        return RedirectResponse(url="/dashboard?error=Certificate upload failed", status_code=status.HTTP_302_FOUND)
     
     return RedirectResponse(url="/dashboard", status_code=status.HTTP_302_FOUND)
 
