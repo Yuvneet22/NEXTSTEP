@@ -374,8 +374,16 @@ async def select_role(
     if role == "counsellor":
         existing_profile = db.query(models.CounsellorProfile).filter(models.CounsellorProfile.user_id == user.id).first()
         if not existing_profile:
-            c_profile = models.CounsellorProfile(user_id=user.id)
+            c_profile = models.CounsellorProfile(
+                user_id=user.id,
+                tnc_accepted=True,
+                tnc_accepted_at=datetime.datetime.utcnow()
+            )
             db.add(c_profile)
+            db.commit()
+        else:
+            existing_profile.tnc_accepted = True
+            existing_profile.tnc_accepted_at = datetime.datetime.utcnow()
             db.commit()
     
     return RedirectResponse(url="/dashboard", status_code=status.HTTP_302_FOUND)
@@ -685,13 +693,25 @@ async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
         all_tickets = db.query(models.Ticket).order_by(models.Ticket.timestamp.desc()).all()
         pending_counsellors = db.query(models.CounsellorProfile).filter(models.CounsellorProfile.verification_status == "pending").all()
         
+        # Fetch all counsellor profiles with session counts
+        all_counsellors = db.query(models.CounsellorProfile).all()
+        for cp in all_counsellors:
+            cp.session_count = db.query(models.Appointment).filter(
+                models.Appointment.counsellor_id == cp.user_id,
+                models.Appointment.status == "completed"
+            ).count()
+            cp.total_sessions = db.query(models.Appointment).filter(
+                models.Appointment.counsellor_id == cp.user_id
+            ).count()
+        
         return templates.TemplateResponse("admin_dashboard.html", {
             "request": request, 
             "user": user, 
             "users": all_users,
             "feedbacks": all_feedback,
             "tickets": all_tickets,
-            "pending_counsellors": pending_counsellors
+            "pending_counsellors": pending_counsellors,
+            "all_counsellors": all_counsellors
         })
     except Exception as e:
         import traceback
