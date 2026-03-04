@@ -107,6 +107,65 @@ try:
 except Exception as e:
     print(f"Database initialization error: {e}")
 
+# Auto-migrate: add missing columns to existing tables
+def run_migrations():
+    """Add new columns to existing tables if they don't exist."""
+    from sqlalchemy import text, inspect
+    
+    try:
+        inspector = inspect(engine)
+        
+        # Get existing columns for each table
+        def get_columns(table_name):
+            try:
+                return [col['name'] for col in inspector.get_columns(table_name)]
+            except Exception:
+                return []
+        
+        migrations = []
+        
+        # Users table migrations
+        user_cols = get_columns('users')
+        if user_cols and 'profile_photo' not in user_cols:
+            migrations.append("ALTER TABLE users ADD COLUMN profile_photo VARCHAR")
+        
+        # CounsellorProfile table migrations
+        cp_cols = get_columns('counsellor_profiles')
+        if cp_cols:
+            if 'tnc_accepted' not in cp_cols:
+                migrations.append("ALTER TABLE counsellor_profiles ADD COLUMN tnc_accepted BOOLEAN DEFAULT FALSE")
+            if 'tnc_accepted_at' not in cp_cols:
+                migrations.append("ALTER TABLE counsellor_profiles ADD COLUMN tnc_accepted_at TIMESTAMP")
+            if 'is_blocked' not in cp_cols:
+                migrations.append("ALTER TABLE counsellor_profiles ADD COLUMN is_blocked BOOLEAN DEFAULT FALSE")
+            if 'block_reason' not in cp_cols:
+                migrations.append("ALTER TABLE counsellor_profiles ADD COLUMN block_reason VARCHAR")
+            if 'certificates' not in cp_cols:
+                migrations.append("ALTER TABLE counsellor_profiles ADD COLUMN certificates TEXT")
+            if 'experience' not in cp_cols:
+                migrations.append("ALTER TABLE counsellor_profiles ADD COLUMN experience TEXT")
+            if 'is_verified' not in cp_cols:
+                migrations.append("ALTER TABLE counsellor_profiles ADD COLUMN is_verified BOOLEAN DEFAULT FALSE")
+            if 'verification_status' not in cp_cols:
+                migrations.append("ALTER TABLE counsellor_profiles ADD COLUMN verification_status VARCHAR DEFAULT 'pending'")
+        
+        if migrations:
+            with engine.connect() as conn:
+                for sql in migrations:
+                    try:
+                        conn.execute(text(sql))
+                        print(f"Migration OK: {sql}")
+                    except Exception as me:
+                        print(f"Migration skip: {me}")
+                conn.commit()
+            print(f"Ran {len(migrations)} migrations successfully")
+        else:
+            print("No migrations needed")
+    except Exception as e:
+        print(f"Migration check error: {e}")
+
+run_migrations()
+
 app = FastAPI(title="CareStance")
 
 from fastapi.middleware.gzip import GZipMiddleware
