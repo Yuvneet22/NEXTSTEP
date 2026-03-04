@@ -280,19 +280,23 @@ async def reset_password(
     
     return RedirectResponse(url="/login?message=Password updated successfully", status_code=status.HTTP_302_FOUND)
 
-@app.get("/login/google")
-async def login_google(request: Request):
-    # Redirect to Google for authorization
+def _get_oauth_redirect_uri(request: Request) -> str:
+    """Build the OAuth redirect URI, preferring BASE_URL and always forcing HTTPS on Vercel."""
     base_url = os.getenv("BASE_URL")
     if base_url:
         redirect_uri = f"{base_url.rstrip('/')}/auth/callback"
     else:
         redirect_uri = str(request.url_for('auth_callback'))
-        # Force https on Vercel to avoid 'invalid_client' or redirect mapping issues
-        if "vercel.app" in str(request.base_url) or os.getenv("VERCEL"):
-            redirect_uri = redirect_uri.replace("http://", "https://")
-        
-    print(f"DEBUG: OAuth Redirect URI: {redirect_uri}")
+    # Always force https on Vercel (reverse proxy terminates TLS, so request may show http)
+    if "vercel.app" in str(request.base_url) or os.getenv("VERCEL"):
+        redirect_uri = redirect_uri.replace("http://", "https://")
+    return redirect_uri
+
+@app.get("/login/google")
+async def login_google(request: Request):
+    redirect_uri = _get_oauth_redirect_uri(request)
+    print(f"DEBUG: OAuth Redirect URI (login): {redirect_uri}")
+    print(f"DEBUG: GOOGLE_CLIENT_ID present: {bool(os.getenv('GOOGLE_CLIENT_ID'))}")
     
     if not os.getenv('GOOGLE_CLIENT_ID'):
         print("ERROR: GOOGLE_CLIENT_ID not found in environment!")
@@ -302,20 +306,17 @@ async def login_google(request: Request):
 
 @app.get("/auth/callback")
 async def auth_callback(request: Request, db: Session = Depends(get_db)):
-    # Same redirect_uri logic as login_google to ensure they match
-    base_url = os.getenv("BASE_URL")
-    if base_url:
-        redirect_uri = f"{base_url.rstrip('/')}/auth/callback"
-    else:
-        redirect_uri = str(request.url_for('auth_callback'))
-        if "vercel.app" in str(request.base_url) or os.getenv("VERCEL"):
-            redirect_uri = redirect_uri.replace("http://", "https://")
+    redirect_uri = _get_oauth_redirect_uri(request)
+    print(f"DEBUG: OAuth Redirect URI (callback): {redirect_uri}")
 
     try:
         token = await oauth.google.authorize_access_token(request, redirect_uri=redirect_uri)
     except Exception as e:
-        print(f"OAuth Error: {e}")
-        return RedirectResponse(url='/login?error=OAuth failed', status_code=status.HTTP_302_FOUND)
+        import traceback
+        print(f"OAuth Token Exchange Error: {e}")
+        traceback.print_exc()
+        error_msg = str(e).replace(" ", "+")[:200]  # Keep URL-safe and short
+        return RedirectResponse(url=f'/login?error={error_msg}', status_code=status.HTTP_302_FOUND)
     
     user_info = token.get('userinfo')
     if not user_info:
