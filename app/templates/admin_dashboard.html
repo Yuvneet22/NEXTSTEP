@@ -112,11 +112,14 @@
                                 <th
                                     class="px-5 py-4 text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                                     Status</th>
+                                <th
+                                    class="px-5 py-4 text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                                    Actions</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-slate-100">
                             {% for cp in all_counsellors %}
-                            <tr class="hover:bg-slate-50 transition-colors">
+                            <tr class="hover:bg-slate-50 transition-colors {{ 'bg-red-50/50' if cp.is_blocked }}">
                                 <!-- Coach Info -->
                                 <td class="px-5 py-4 whitespace-nowrap">
                                     <div class="flex items-center gap-3">
@@ -231,10 +234,78 @@
                                         Pending</span>
                                     {% endif %}
                                 </td>
+
+                                <!-- Actions -->
+                                <td class="px-5 py-4 text-center" x-data="{ showBlockForm: false }">
+                                    {% if cp.is_blocked %}
+                                    <div class="space-y-2">
+                                        <span
+                                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-red-100 text-red-700 border border-red-200">
+                                            🚫 Blocked
+                                        </span>
+                                        <p class="text-[10px] text-red-500 font-medium max-w-[140px] mx-auto">{{
+                                            cp.block_reason }}</p>
+                                        <form action="/admin/unblock-counsellor/{{ cp.user.id }}" method="POST"
+                                            onsubmit="return confirm('Unblock this counsellor?');">
+                                            <button type="submit"
+                                                class="mt-1 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors">
+                                                <i class="fas fa-unlock mr-1"></i> Unblock
+                                            </button>
+                                        </form>
+                                    </div>
+                                    {% else %}
+                                    <div class="relative">
+                                        <button @click="showBlockForm = !showBlockForm" type="button"
+                                            class="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors">
+                                            <i class="fas fa-ban mr-1"></i> Block
+                                        </button>
+
+                                        <!-- Block Reason Dropdown -->
+                                        <div x-show="showBlockForm" x-transition @click.outside="showBlockForm = false"
+                                            class="absolute right-0 top-10 z-30 w-64 bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 space-y-3"
+                                            style="display: none;">
+                                            <p class="text-xs font-bold text-slate-700">Select reason for blocking:</p>
+                                            <form action="/admin/block-counsellor/{{ cp.user.id }}" method="POST"
+                                                class="space-y-2">
+                                                <select name="block_reason" required
+                                                    class="w-full text-xs px-3 py-2 border border-slate-200 rounded-xl bg-slate-50 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none">
+                                                    <option value="" disabled selected>Choose reason...</option>
+                                                    <option value="Violation of Terms & Conditions">Violation of Terms &
+                                                        Conditions</option>
+                                                    <option value="Abusive or inappropriate behavior">Abusive or
+                                                        inappropriate behavior</option>
+                                                    <option value="Sharing misleading information">Sharing misleading
+                                                        information</option>
+                                                    <option value="Attempting to move users off-platform">Attempting to
+                                                        move users off-platform</option>
+                                                    <option value="Fake credentials or certificates">Fake credentials or
+                                                        certificates</option>
+                                                    <option value="Multiple user complaints">Multiple user complaints
+                                                    </option>
+                                                    <option value="Fraudulent activity detected">Fraudulent activity
+                                                        detected</option>
+                                                    <option value="Non-compliance with platform policies">Non-compliance
+                                                        with platform policies</option>
+                                                </select>
+                                                <div class="flex gap-2">
+                                                    <button @click="showBlockForm = false" type="button"
+                                                        class="flex-1 py-1.5 text-[10px] font-bold text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition">
+                                                        Cancel
+                                                    </button>
+                                                    <button type="submit"
+                                                        class="flex-1 py-1.5 text-[10px] font-bold text-white bg-red-600 rounded-lg hover:bg-red-700 transition">
+                                                        Confirm Block
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </td>
                             </tr>
                             {% else %}
                             <tr>
-                                <td colspan="6" class="px-6 py-10 text-center text-slate-400 italic">
+                                <td colspan="7" class="px-6 py-10 text-center text-slate-400 italic">
                                     <div class="flex flex-col items-center gap-2">
                                         <span class="text-3xl opacity-30">🧠</span>
                                         <span>No life coaches registered yet.</span>

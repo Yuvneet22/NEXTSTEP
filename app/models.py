@@ -117,6 +117,8 @@ class CounsellorProfile(Base):
     verification_status = Column(String, default="pending") # pending, approved, rejected
     tnc_accepted = Column(Boolean, default=False)
     tnc_accepted_at = Column(DateTime, nullable=True)
+    is_blocked = Column(Boolean, default=False)
+    block_reason = Column(String, nullable=True)
 
     user = relationship("User", back_populates="counsellor_profile")
 

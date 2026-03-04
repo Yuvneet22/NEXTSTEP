@@ -888,13 +888,59 @@ async def verify_counsellor(
     
     return RedirectResponse(url="/admin", status_code=status.HTTP_302_FOUND)
 
+@app.post("/admin/block-counsellor/{counsellor_id}")
+async def block_counsellor(
+    counsellor_id: int,
+    request: Request,
+    block_reason: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    current_user = get_current_user(request, db)
+    if not current_user or current_user.role != "admin":
+        admin_email = os.getenv("ADMIN_EMAIL")
+        if not admin_email or current_user.email != admin_email:
+            return RedirectResponse(url="/dashboard", status_code=status.HTTP_302_FOUND)
+    
+    profile = db.query(models.CounsellorProfile).filter(models.CounsellorProfile.user_id == counsellor_id).first()
+    if profile:
+        profile.is_blocked = True
+        profile.block_reason = block_reason
+        profile.is_verified = False  # Remove from public listing
+        db.commit()
+    
+    return RedirectResponse(url="/admin", status_code=status.HTTP_302_FOUND)
+
+@app.post("/admin/unblock-counsellor/{counsellor_id}")
+async def unblock_counsellor(
+    counsellor_id: int,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    current_user = get_current_user(request, db)
+    if not current_user or current_user.role != "admin":
+        admin_email = os.getenv("ADMIN_EMAIL")
+        if not admin_email or current_user.email != admin_email:
+            return RedirectResponse(url="/dashboard", status_code=status.HTTP_302_FOUND)
+    
+    profile = db.query(models.CounsellorProfile).filter(models.CounsellorProfile.user_id == counsellor_id).first()
+    if profile:
+        profile.is_blocked = False
+        profile.block_reason = None
+        db.commit()
+    
+    return RedirectResponse(url="/admin", status_code=status.HTTP_302_FOUND)
+
 @app.get("/counsellors", response_class=HTMLResponse)
 async def list_counsellors(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
     if not user:
         return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
         
-    counsellors = db.query(models.CounsellorProfile).filter(models.CounsellorProfile.is_verified == True).all()
+    # Only show verified AND non-blocked counsellors to students
+    counsellors = db.query(models.CounsellorProfile).filter(
+        models.CounsellorProfile.is_verified == True,
+        models.CounsellorProfile.is_blocked == False
+    ).all()
     
     return templates.TemplateResponse("counsellors_list.html", {"request": request, "user": user, "counsellors": counsellors})
 

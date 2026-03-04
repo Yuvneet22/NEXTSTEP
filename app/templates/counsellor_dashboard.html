@@ -3,41 +3,85 @@
 {% block title %}Counsellor Dashboard{% endblock %}
 
 {% block content %}
+
+{% if profile and profile.is_blocked %}
+<!-- Blocked Account Warning -->
+<div
+    class="mb-6 bg-gradient-to-r from-red-600 to-rose-600 rounded-2xl p-6 shadow-xl shadow-red-200 border border-red-300">
+    <div class="flex items-start gap-4">
+        <div class="flex-shrink-0 w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+        </div>
+        <div class="flex-1">
+            <h3 class="text-lg font-extrabold text-white">⚠️ Account Suspended</h3>
+            <p class="text-white/90 text-sm mt-1">
+                Your account has been blocked by the admin for the following reason:
+            </p>
+            <div class="mt-2 bg-white/15 backdrop-blur-sm rounded-xl px-4 py-2.5 border border-white/20">
+                <p class="text-white font-bold text-sm">{{ profile.block_reason }}</p>
+            </div>
+            <p class="text-white/80 text-xs mt-3">
+                Your profile has been hidden from students and you cannot accept new appointments.
+                If you believe this is a mistake, please raise a support ticket.
+            </p>
+            <a href="/ticket"
+                class="inline-flex items-center gap-2 mt-4 px-5 py-2.5 bg-white text-red-600 font-bold rounded-xl text-sm hover:bg-red-50 transition-all shadow-md hover:scale-[1.02]">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                Contact Admin — Raise a Ticket
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <div class="bg-white/70 backdrop-blur-xl rounded-3xl overflow-hidden shadow-2xl border border-white/50">
     <div class="px-6 py-6 sm:px-8 bg-indigo-50/50 border-b border-indigo-100 flex justify-between items-center">
         <div class="flex items-center gap-6">
-             <!-- Profile Image -->
-             <div class="relative group">
-                <img src="{{ user.profile_photo if user.profile_photo else 'https://ui-avatars.com/api/?name=' + user.full_name + '&background=random' }}" 
-                     alt="Profile" 
-                     class="w-20 h-20 rounded-2xl object-cover border-4 border-white/20 shadow-xl">
-                <button onclick="document.getElementById('photo-upload').click()" 
-                        class="absolute -bottom-2 -right-2 bg-indigo-600 text-white p-2 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+            <!-- Profile Image -->
+            <div class="relative group">
+                <img src="{{ user.profile_photo if user.profile_photo else 'https://ui-avatars.com/api/?name=' + user.full_name + '&background=random' }}"
+                    alt="Profile" class="w-20 h-20 rounded-2xl object-cover border-4 border-white/20 shadow-xl">
+                <button onclick="document.getElementById('photo-upload').click()"
+                    class="absolute -bottom-2 -right-2 bg-indigo-600 text-white p-2 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
                     <i class="fas fa-camera text-xs"></i>
                 </button>
-                <form id="photo-form" action="/profile/upload-photo" method="POST" enctype="multipart/form-data" class="hidden">
-                    <input type="file" id="photo-upload" name="file" onchange="document.getElementById('photo-form').submit()" accept="image/*">
+                <form id="photo-form" action="/profile/upload-photo" method="POST" enctype="multipart/form-data"
+                    class="hidden">
+                    <input type="file" id="photo-upload" name="file"
+                        onchange="document.getElementById('photo-form').submit()" accept="image/*">
                 </form>
             </div>
             <div>
                 <h3 class="text-xl leading-6 font-bold text-slate-900">{{ user.full_name }}</h3>
                 <p class="mt-1 max-w-2xl text-sm text-slate-500">Manage your profile and student appointments.</p>
-                
+
                 <!-- Verification Badge -->
                 {% if profile.verification_status == 'approved' %}
-                <span class="inline-flex items-center gap-1 mt-2 px-3 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                <span
+                    class="inline-flex items-center gap-1 mt-2 px-3 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
                     <i class="fas fa-check-circle"></i> Verified Counsellor
                 </span>
                 {% elif profile.verification_status == 'pending' %}
-                <span class="inline-flex items-center gap-1 mt-2 px-3 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                <span
+                    class="inline-flex items-center gap-1 mt-2 px-3 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
                     <i class="fas fa-clock"></i> Verification Pending
                 </span>
                 {% elif profile.verification_status == 'rejected' %}
-                <span class="inline-flex items-center gap-1 mt-2 px-3 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800 border border-red-200">
+                <span
+                    class="inline-flex items-center gap-1 mt-2 px-3 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800 border border-red-200">
                     <i class="fas fa-times-circle"></i> Verification Rejected
                 </span>
                 {% else %}
-                <span class="inline-flex items-center gap-1 mt-2 px-3 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-800 border border-slate-200">
+                <span
+                    class="inline-flex items-center gap-1 mt-2 px-3 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-800 border border-slate-200">
                     <i class="fas fa-info-circle"></i> Not Verified
                 </span>
                 {% endif %}
@@ -65,7 +109,8 @@
                     <input type="text" name="availability_text" placeholder="e.g., Sat-Sun 10am-2pm" required
                         value="{% if profile and profile.availability %}{{ profile.availability.get('text', '') }}{% endif %}"
                         class="mt-1 block w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors">
-                    <p class="text-xs text-slate-500 mt-1">Specify your working days and hours so students know when to book you.</p>
+                    <p class="text-xs text-slate-500 mt-1">Specify your working days and hours so students know when to
+                        book you.</p>
                 </div>
 
                 <!-- Account / Bank Details -->
@@ -76,25 +121,25 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase">Bank Name</label>
-                            <input type="text" name="bank_name" placeholder="e.g., HDFC Bank" 
+                            <input type="text" name="bank_name" placeholder="e.g., HDFC Bank"
                                 value="{% if profile and profile.account_details %}{{ profile.account_details.get('bank_name', '') }}{% endif %}"
                                 class="mt-1 block w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase">Account Number</label>
-                            <input type="text" name="account_num" placeholder="XXXX XXXX XXXX" 
+                            <input type="text" name="account_num" placeholder="XXXX XXXX XXXX"
                                 value="{% if profile and profile.account_details %}{{ profile.account_details.get('account_num', '') }}{% endif %}"
                                 class="mt-1 block w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase">IFSC Code</label>
-                            <input type="text" name="ifsc_code" placeholder="HDFC0001234" 
+                            <input type="text" name="ifsc_code" placeholder="HDFC0001234"
                                 value="{% if profile and profile.account_details %}{{ profile.account_details.get('ifsc', '') }}{% endif %}"
                                 class="mt-1 block w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase">UPI ID</label>
-                            <input type="text" name="upi_id" placeholder="yourname@upi" 
+                            <input type="text" name="upi_id" placeholder="yourname@upi"
                                 value="{% if profile and profile.account_details %}{{ profile.account_details.get('upi', '') }}{% endif %}"
                                 class="mt-1 block w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500">
                         </div>
@@ -110,9 +155,11 @@
             <!-- Verification Upload -->
             <div class="mt-10 pt-8 border-t border-slate-100">
                 <h4 class="text-lg font-bold text-slate-900 mb-4">Professional Verification</h4>
-                <p class="text-sm text-slate-500 mb-6">Upload your certificates and briefly describe your experience. Admins will review this to verify your profile.</p>
-                
-                <form action="/counsellor/upload-certificates" method="POST" enctype="multipart/form-data" class="space-y-6 max-w-xl">
+                <p class="text-sm text-slate-500 mb-6">Upload your certificates and briefly describe your experience.
+                    Admins will review this to verify your profile.</p>
+
+                <form action="/counsellor/upload-certificates" method="POST" enctype="multipart/form-data"
+                    class="space-y-6 max-w-xl">
                     <div>
                         <label class="block text-sm font-medium text-slate-700">Years of Experience & Expertise</label>
                         <textarea name="experience" rows="4" required
@@ -121,7 +168,8 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-slate-700">Upload Certificates (PDF or Images)</label>
+                        <label class="block text-sm font-medium text-slate-700">Upload Certificates (PDF or
+                            Images)</label>
                         <input type="file" name="files" multiple accept=".pdf,image/*"
                             class="mt-1 block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
                     </div>
@@ -131,13 +179,15 @@
                         {% for cert in profile.certificates %}
                         <div class="relative group">
                             {% if cert.endswith('.pdf') %}
-                             <a href="{{ cert }}" target="_blank" class="flex items-center gap-2 p-3 bg-red-50 rounded-xl border border-red-100 text-red-700 text-xs font-bold overflow-hidden">
+                            <a href="{{ cert }}" target="_blank"
+                                class="flex items-center gap-2 p-3 bg-red-50 rounded-xl border border-red-100 text-red-700 text-xs font-bold overflow-hidden">
                                 <i class="fas fa-file-pdf text-xl"></i>
                                 <span class="truncate">Certificate {{ loop.index }}</span>
-                             </a>
+                            </a>
                             {% else %}
                             <img src="{{ cert }}" class="w-full h-24 object-cover rounded-xl border border-slate-200">
-                            <a href="{{ cert }}" target="_blank" class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity rounded-xl">
+                            <a href="{{ cert }}" target="_blank"
+                                class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity rounded-xl">
                                 <i class="fas fa-eye"></i>
                             </a>
                             {% endif %}
@@ -175,7 +225,7 @@
                     <div class="flex flex-col items-end gap-2">
                         <div class="flex gap-2">
                             <form action="/appointment/complete/{{ apt.id }}" method="POST">
-                                <button type="submit" 
+                                <button type="submit"
                                     class="px-4 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 font-bold rounded-xl transition-all hover:scale-[1.05]">
                                     Mark as Done
                                 </button>
