@@ -263,8 +263,24 @@
             <form action="/counsellor/update" method="POST" class="space-y-4 max-w-xl">
                 <div>
                     <label class="block text-sm font-medium text-slate-700">Your Fee per Session (in ₹)</label>
+                    {% if profile and profile.fee_locked %}
+                    <div class="mt-1 flex items-center gap-3">
+                        <div
+                            class="flex-1 px-4 py-2 bg-slate-100 border border-slate-200 rounded-xl text-slate-500 font-bold cursor-not-allowed">
+                            ₹{{ "%.0f"|format(profile.fee) }}
+                        </div>
+                        <span
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-[10px] font-bold text-amber-700 uppercase tracking-wider">
+                            <i class="fas fa-lock text-[9px]"></i> Set by Admin
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-1">Your session fee has been set by admin and cannot be
+                        modified. Contact admin via a support ticket if needed.</p>
+                    <input type="hidden" name="fee" value="{{ profile.fee }}">
+                    {% else %}
                     <input type="number" name="fee" value="{{ profile.fee if profile else 0 }}" required
                         class="mt-1 block w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors">
+                    {% endif %}
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700">Availability (Times in a Week)</label>

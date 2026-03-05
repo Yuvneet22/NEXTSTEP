@@ -849,7 +849,8 @@ async def counsellor_update(
     
     profile = db.query(models.CounsellorProfile).filter(models.CounsellorProfile.user_id == user.id).first()
     if profile:
-        profile.fee = fee
+        if not profile.fee_locked:
+            profile.fee = fee
         profile.availability = {"text": availability_text}
         profile.account_details = account_data
     else:
@@ -1025,6 +1026,7 @@ async def admin_update_counsellor_fee(
     if profile:
         old_fee = profile.fee or 0.0
         profile.fee = new_fee
+        profile.fee_locked = True  # Lock fee so counsellor cannot change it
         db.commit()
 
         # Notify counsellor about the fee change

@@ -119,6 +119,7 @@ class CounsellorProfile(Base):
     tnc_accepted_at = Column(DateTime, nullable=True)
     is_blocked = Column(Boolean, default=False)
     block_reason = Column(String, nullable=True)
+    fee_locked = Column(Boolean, default=False)  # True = only admin can change fee
 
     user = relationship("User", back_populates="counsellor_profile")
 
