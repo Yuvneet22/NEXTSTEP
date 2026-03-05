@@ -2228,7 +2228,8 @@ async def ticket_page(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
     if not user:
         return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
-    return templates.TemplateResponse("ticket.html", {"request": request, "user": user})
+    tickets = db.query(models.Ticket).filter(models.Ticket.user_id == user.id).order_by(models.Ticket.timestamp.desc()).all()
+    return templates.TemplateResponse("ticket.html", {"request": request, "user": user, "tickets": tickets})
 
 @app.post("/ticket/submit")
 async def submit_ticket(
@@ -2249,7 +2250,7 @@ async def submit_ticket(
     db.add(new_ticket)
     db.commit()
     
-    return RedirectResponse(url="/dashboard", status_code=status.HTTP_302_FOUND)
+    return RedirectResponse(url="/ticket", status_code=status.HTTP_302_FOUND)
 
 
 # --- Career Path Generation ---
