@@ -2360,7 +2360,7 @@ async def view_roadmap_detail(path_id: int, request: Request, db: Session = Depe
     if not path:
         raise HTTPException(status_code=404, detail="Roadmap not found")
         
-    return templates.TemplateResponse("career_roadmap_detail.html", {"request": request, "user": user, "path": path})
+    return templates.TemplateResponse("career_roadmap_v2.html", {"request": request, "user": user, "path": path})
 
 if __name__ == "__main__":
     import uvicorn
