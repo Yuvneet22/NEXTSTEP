@@ -312,6 +312,23 @@
     </div>
 </div>
 
+<!-- Floating Premium AI Buddy Orb -->
+<div id="talking-buddy" onclick="window.location.href='/chatbot'" 
+    class="fixed bottom-8 right-8 z-[100] flex items-center justify-center w-20 h-20 cursor-pointer pointer-events-auto hover:scale-110 transition-transform">
+    <!-- Outer Pulse Rings -->
+    <div class="pulse-ring absolute inset-0 rounded-full bg-violet-400 opacity-0"></div>
+    <div class="pulse-ring absolute inset-0 rounded-full bg-indigo-400 opacity-0" style="animation-delay: 0.5s"></div>
+    
+    <!-- Inner Orb -->
+    <div class="buddy-orb relative w-14 h-14 rounded-full bg-gradient-to-br from-violet-600 to-indigo-700 shadow-[0_0_30px_rgba(139,92,246,0.6)] flex items-center justify-center border-2 border-violet-400/30 overflow-hidden">
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.2),transparent)]"></div>
+        <span class="text-3xl z-10">🎓</span>
+    </div>
+
+    <!-- Status Indicator -->
+    <div id="buddy-status" class="absolute bottom-1 right-1 h-5 w-5 bg-slate-400 rounded-full border-2 border-white shadow-lg z-[110] transition-colors duration-300"></div>
+</div>
+
 <script>
     async function toggleStepV2(pathId, stepIndex) {
         try {

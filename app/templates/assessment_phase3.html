@@ -114,8 +114,9 @@
   </div>
 </div>
 
-<!-- Floating AI Buddy Orb -->
-<div id="talking-buddy" class="fixed top-24 right-8 z-[100] flex items-center justify-center w-20 h-20 pointer-events-none">
+<!-- Floating Premium AI Buddy Orb -->
+<div id="talking-buddy" onclick="window.location.href='/chatbot'" 
+    class="fixed top-24 right-8 z-[100] flex items-center justify-center w-20 h-20 cursor-pointer pointer-events-auto hover:scale-110 transition-transform">
     <div class="pulse-ring absolute inset-0 rounded-full bg-violet-400 opacity-0"></div>
     <div class="pulse-ring absolute inset-0 rounded-full bg-indigo-400 opacity-0" style="animation-delay: 0.5s"></div>
     <div class="buddy-orb relative w-14 h-14 rounded-full bg-gradient-to-br from-violet-600 to-indigo-700 shadow-[0_0_30px_rgba(139,92,246,0.6)] flex items-center justify-center border-2 border-violet-400/30 overflow-hidden">
@@ -178,10 +179,7 @@ function handleSelection() {
     setTimeout(() => { currentStep++; showStep(currentStep); }, 500);
 }
 
-function speakCurrentScenario() {
-    window.speechSynthesis.cancel();
-    const pauseIcon = document.getElementById('pause-icon');
-    if (pauseIcon) pauseIcon.setAttribute('d', 'M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z');
+async function speakCurrentScenario() {
     const stepEl = steps[currentStep];
     if (!stepEl) return;
     const title = stepEl.querySelector('.scenario-title').innerText;
@@ -189,36 +187,50 @@ function speakCurrentScenario() {
     const options = stepEl.querySelectorAll('.option-text');
     let script = `${title}. ${story}. Your options are: `;
     options.forEach((opt, i) => { script += `Option ${i + 1}: ${opt.innerText}. `; });
-    const utterance = new SpeechSynthesisUtterance(script);
-    utterance.voice = getBestVoice();
-    utterance.rate = 0.95;
-    utterance.pitch = 1.1;
 
-    // Voice Recording Logic
-    let recognition;
-    const recordBtn = document.getElementById('record-btn');
-    if (('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) && recordBtn && !recordBtn._bound) {
-        recordBtn._bound = true;
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        recognition = new SpeechRecognition();
-        recognition.continuous = false;
-        recognition.lang = 'en-US';
-        recognition.interimResults = false;
-        recognition.onstart = () => { recordBtn.classList.add('bg-red-500', 'text-white', 'animate-pulse'); recordBtn.classList.remove('bg-slate-100', 'text-slate-600'); window.speechSynthesis.cancel(); };
-        recognition.onend = () => { recordBtn.classList.remove('bg-red-500', 'text-white', 'animate-pulse'); recordBtn.classList.add('bg-slate-100', 'text-slate-600'); };
-        recognition.onresult = async (event) => {
-            const transcript = event.results[0][0].transcript;
-            const buddySpan = document.getElementById('talking-buddy')?.querySelector('span');
-            if (buddySpan) { const orig = buddySpan.innerText; buddySpan.innerText = '🤔'; setTimeout(() => { buddySpan.innerText = orig; }, 3000); }
-            try {
-                const optionEls = steps[currentStep].querySelectorAll('.option-label');
-                const response = await fetch('/assessment/resolve-voice', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ transcript, options: Array.from(optionEls).map(opt => ({ value: opt.querySelector('input').value, text: opt.querySelector('.option-text').innerText })) }) });
-                if (response.ok) { const data = await response.json(); const radio = steps[currentStep].querySelector(`input[value="${data.best_match}"]`); if (radio) { radio.checked = true; handleSelection(); } }
-            } catch (err) { console.error('Resolution error:', err); }
+    const talkingBuddy = document.getElementById('talking-buddy');
+    const buddyStatus = document.getElementById('buddy-status');
+    const buddyTalkingClass = 'buddy-talking';
+    
+    try {
+        window.speechSynthesis.cancel();
+        const pauseIcon = document.getElementById('pause-icon');
+        if (pauseIcon) pauseIcon.setAttribute('d', 'M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z');
+        
+        talkingBuddy.classList.add(buddyTalkingClass);
+        buddyStatus.classList.remove('bg-slate-400');
+        buddyStatus.classList.add('bg-emerald-500');
+
+        const response = await fetch(`/api/tts?text=${encodeURIComponent(script)}`);
+        if (response.ok && response.headers.get('Content-Type').includes('audio')) {
+            const blob = await response.blob();
+            const audioUrl = URL.createObjectURL(blob);
+            const audio = new Audio(audioUrl);
+            audio.onended = () => {
+                talkingBuddy.classList.remove(buddyTalkingClass);
+                buddyStatus.classList.remove('bg-emerald-500');
+                buddyStatus.classList.add('bg-slate-400');
+            };
+            audio.play();
+        } else { throw new Error("Bark API error"); }
+    } catch (err) {
+        console.log("Fallback to native speech");
+        const utterance = new SpeechSynthesisUtterance(script);
+        utterance.voice = getBestVoice();
+        utterance.rate = 0.95;
+        utterance.pitch = 1.1;
+        utterance.onstart = () => {
+            talkingBuddy.classList.add(buddyTalkingClass);
+            buddyStatus.classList.remove('bg-slate-400');
+            buddyStatus.classList.add('bg-emerald-500');
         };
-        recordBtn.addEventListener('click', () => { if (recordBtn.classList.contains('bg-red-500')) { recognition.stop(); } else { recognition.start(); } });
+        utterance.onend = () => {
+            talkingBuddy.classList.remove(buddyTalkingClass);
+            buddyStatus.classList.remove('bg-emerald-500');
+            buddyStatus.classList.add('bg-slate-400');
+        };
+        window.speechSynthesis.speak(utterance);
     }
-    window.speechSynthesis.speak(utterance);
 }
 
 document.getElementById('scenario-form').addEventListener('submit', () => {

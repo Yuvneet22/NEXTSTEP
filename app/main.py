@@ -2019,6 +2019,39 @@ Welcome the student warmly (1 sentence), then present this first question:
     })
 
 
+# --- Bark TTS Route ---
+
+import httpx
+
+@app.get("/api/tts")
+async def generate_tts(text: str):
+    """
+    Generates audio using Bark (via Hugging Face Inference API or local fallback).
+    """
+    # Use Bark via Hugging Face Inference API (Serverless)
+    # Model: suno/bark-small (faster) or suno/bark
+    HF_TOKEN = os.getenv("HF_TOKEN")
+    API_URL = "https://api-inference.huggingface.co/models/suno/bark-small"
+    
+    if not HF_TOKEN:
+        # Fallback if no token is provided: use a public one or demo mode
+        # For this task, I'll assume we want the structure ready.
+        return {"error": "HF_TOKEN missing in .env", "fallback": True}
+
+    headers = {"Authorization": f"Bearer {HF_TOKEN}"}
+    
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(API_URL, headers=headers, json={"inputs": text}, timeout=30.0)
+            if response.status_code == 200:
+                # Return the audio as a stream or file
+                return Response(content=response.content, media_type="audio/mpeg")
+            else:
+                return {"error": f"HF API Error: {response.text}", "status": response.status_code}
+        except Exception as e:
+            return {"error": str(e)}
+
+
 # --- Chatbot Routes ---
 
 class ChatRequest(BaseModel):
@@ -2394,20 +2427,44 @@ async def toggle_step_completion(path_id: int, step_index: int, request: Request
     
     # Update path_data
     data = path.path_data
-    if "steps" in data and 0 <= step_index < len(data["steps"]):
+    if data is None:
+        raise HTTPException(status_code=400, detail="Path data is empty")
+
+    steps = []
+    if isinstance(data, dict) and "steps" in data:
+        steps = data["steps"]
+    elif isinstance(data, list):
+        steps = data
+    else:
+        # Fallback for unexpected format
+        raise HTTPException(status_code=400, detail="Invalid path data format")
+
+    if 0 <= step_index < len(steps):
         # Toggle completed state
-        is_completed = data["steps"][step_index].get("completed", False)
-        data["steps"][step_index]["completed"] = not is_completed
+        is_completed = steps[step_index].get("completed", False)
+        steps[step_index]["completed"] = not is_completed
         
-        # Update progress percentage (optional but good)
-        completed_count = sum(1 for s in data["steps"] if s.get("completed", False))
-        data["progress_percentage"] = int((completed_count / len(data["steps"])) * 100)
+        # Update progress percentage if it's a dict with steps
+        if isinstance(data, dict) and "steps" in data:
+            completed_count = sum(1 for s in data["steps"] if s.get("completed", False))
+            data["progress_percentage"] = int((completed_count / len(data["steps"])) * 100)
+    else:
+        raise HTTPException(status_code=400, detail="Invalid step index")
     
-    # Re-assign to trigger SQLAlchemy JSON detection
-    path.path_data = dict(data)
+    # Re-assign to trigger SQLAlchemy JSON detection and commit
+    if isinstance(data, dict):
+        path.path_data = dict(data)
+    else:
+        path.path_data = list(steps)
+        
     db.commit()
+    db.refresh(path)
     
-    return {"success": True, "completed": data["steps"][step_index]["completed"], "progress": data.get("progress_percentage", 0)}
+    return {
+        "success": True, 
+        "completed": steps[step_index]["completed"], 
+        "progress": data.get("progress_percentage", 0) if isinstance(data, dict) else 0
+    }
 
 @app.get("/career/roadmaps", response_class=HTMLResponse)
 async def view_roadmaps(request: Request, db: Session = Depends(get_db)):

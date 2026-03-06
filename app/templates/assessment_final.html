@@ -189,9 +189,9 @@
     </div>
 </div>
 
-<!-- Floating AI Buddy Orb -->
-<div id="talking-buddy"
-    class="fixed top-24 right-8 z-[100] flex items-center justify-center w-20 h-20 pointer-events-none">
+<!-- Floating Premium AI Buddy Orb -->
+<div id="talking-buddy" onclick="window.location.href='/chatbot'"
+    class="fixed top-24 right-8 z-[100] flex items-center justify-center w-20 h-20 cursor-pointer pointer-events-auto hover:scale-110 transition-transform">
     <div class="pulse-ring absolute inset-0 rounded-full bg-violet-400 opacity-0"></div>
     <div class="pulse-ring absolute inset-0 rounded-full bg-indigo-400 opacity-0" style="animation-delay: 0.5s"></div>
     <div
@@ -275,17 +275,55 @@
             voices.find(v => v.lang.startsWith('en')) || voices[0];
     }
 
-    function speakCurrentQuestion() {
-        window.speechSynthesis.cancel();
-        const pauseIcon = document.getElementById('pause-icon');
-        if (pauseIcon) pauseIcon.setAttribute('d', 'M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z');
+    async function speakCurrentQuestion() {
         const currentQuestion = steps[currentStep]?.querySelector('.question-title')?.innerText;
         const currentText = steps[currentStep]?.querySelector('p.italic')?.innerText;
-        if (currentQuestion) {
-            let textToSpeak = currentQuestion;
-            if (currentText) textToSpeak += ". . . " + currentText;
+        if (!currentQuestion) return;
+
+        let textToSpeak = currentQuestion;
+        if (currentText) textToSpeak += ". . . " + currentText;
+
+        const talkingBuddy = document.getElementById('talking-buddy');
+        const buddyStatus = document.getElementById('buddy-status');
+        const buddyTalkingClass = 'buddy-talking';
+
+        try {
+            window.speechSynthesis.cancel();
+            const pauseIcon = document.getElementById('pause-icon');
+            if (pauseIcon) pauseIcon.setAttribute('d', 'M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z');
+
+            talkingBuddy.classList.add(buddyTalkingClass);
+            buddyStatus.classList.remove('bg-slate-400');
+            buddyStatus.classList.add('bg-emerald-500');
+
+            const response = await fetch(`/api/tts?text=${encodeURIComponent(textToSpeak)}`);
+            if (response.ok && response.headers.get('Content-Type').includes('audio')) {
+                const blob = await response.blob();
+                const audioUrl = URL.createObjectURL(blob);
+                const audio = new Audio(audioUrl);
+                audio.onended = () => {
+                    talkingBuddy.classList.remove(buddyTalkingClass);
+                    buddyStatus.classList.remove('bg-emerald-500');
+                    buddyStatus.classList.add('bg-slate-400');
+                };
+                audio.play();
+            } else { throw new Error("Bark API error"); }
+        } catch (err) {
+            console.log("Fallback to browser TTS");
             const utterance = new SpeechSynthesisUtterance(textToSpeak);
-            utterance.voice = getBestVoice(); utterance.rate = 1.0; utterance.pitch = 1.1;
+            utterance.voice = getBestVoice();
+            utterance.rate = 1.0;
+            utterance.pitch = 1.1;
+            utterance.onstart = () => {
+                talkingBuddy.classList.add(buddyTalkingClass);
+                buddyStatus.classList.remove('bg-slate-400');
+                buddyStatus.classList.add('bg-emerald-500');
+            };
+            utterance.onend = () => {
+                talkingBuddy.classList.remove(buddyTalkingClass);
+                buddyStatus.classList.remove('bg-emerald-500');
+                buddyStatus.classList.add('bg-slate-400');
+            };
             window.speechSynthesis.speak(utterance);
         }
     }

@@ -119,7 +119,8 @@
 </div>
 
 <!-- Floating Premium AI Buddy Orb -->
-<div id="talking-buddy" class="fixed top-24 right-8 z-[100] flex items-center justify-center w-20 h-20 pointer-events-none">
+<div id="talking-buddy" onclick="window.location.href='/chatbot'" 
+    class="fixed top-24 right-8 z-[100] flex items-center justify-center w-20 h-20 cursor-pointer pointer-events-auto hover:scale-110 transition-transform">
     <!-- Outer Pulse Rings -->
     <div class="pulse-ring absolute inset-0 rounded-full bg-violet-400 opacity-0"></div>
     <div class="pulse-ring absolute inset-0 rounded-full bg-indigo-400 opacity-0" style="animation-delay: 0.5s"></div>
@@ -191,99 +192,146 @@
                voices[0];
     }
 
-    function speakCurrentQuestion() {
-        window.speechSynthesis.cancel();
-        const pauseIcon = document.getElementById('pause-icon');
-        if (pauseIcon) pauseIcon.setAttribute('d', 'M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z');
+    async function speakCurrentQuestion() {
         const currentQuestion = steps[currentStep]?.querySelector('.question-title')?.innerText;
-        if (currentQuestion) {
+        if (!currentQuestion) return;
+
+        // Visual Feedback for AI Buddy
+        const buddyTalkingClass = 'buddy-talking';
+        
+        try {
+            // Cancel any current browser synthesis
+            window.speechSynthesis.cancel();
+            
+            talkingBuddy.classList.add(buddyTalkingClass);
+            buddyStatus.classList.remove('bg-slate-400');
+            buddyStatus.classList.add('bg-emerald-500');
+
+            // Try Bark AI TTS via backend
+            const response = await fetch(`/api/tts?text=${encodeURIComponent(currentQuestion)}`);
+            
+            if (response.ok && response.headers.get('Content-Type').includes('audio')) {
+                const blob = await response.blob();
+                const audioUrl = URL.createObjectURL(blob);
+                const audio = new Audio(audioUrl);
+                
+                audio.onended = () => {
+                    talkingBuddy.classList.remove(buddyTalkingClass);
+                    buddyStatus.classList.remove('bg-emerald-500');
+                    buddyStatus.classList.add('bg-slate-400');
+                };
+                
+                audio.play();
+            } else {
+                console.log("Bark AI Fallback: Using Browser TTS");
+                throw new Error("Bark API unavailable");
+            }
+        } catch (err) {
+            // Fallback to Native Speech Synthesis
             const utterance = new SpeechSynthesisUtterance(currentQuestion);
             utterance.voice = getBestVoice();
             utterance.rate = 1.0;
-            utterance.pitch = 1.1; // Slightly more energetic
+            utterance.pitch = 1.1;
+
+            utterance.onstart = () => {
+                talkingBuddy.classList.add(buddyTalkingClass);
+                buddyStatus.classList.remove('bg-slate-400');
+                buddyStatus.classList.add('bg-emerald-500');
+            };
+
+            utterance.onend = () => {
+                talkingBuddy.classList.remove(buddyTalkingClass);
+                buddyStatus.classList.remove('bg-emerald-500');
+                buddyStatus.classList.add('bg-slate-400');
+            };
+
+            window.speechSynthesis.speak(utterance);
+        }
+    }
 
     // --- Voice Recording Logic ---
     let recognition;
-    const recordBtn = document.getElementById('record-btn');
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-        const SpeechRecognition = window.speechRecognition || window.webkitSpeechRecognition;
-        recognition = new SpeechRecognition();
-        recognition.continuous = false;
-        recognition.lang = 'en-US';
-        recognition.interimResults = false;
+    function initVoiceRecording() {
+        const recordBtn = document.getElementById('record-btn');
+        if (!recordBtn) return;
 
-        recognition.onstart = () => {
-            recordBtn.classList.add('bg-red-500', 'text-white', 'animate-pulse');
-            recordBtn.classList.remove('bg-slate-100', 'text-slate-600');
-            window.speechSynthesis.cancel();
-        };
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.speechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
 
-        recognition.onend = () => {
-            recordBtn.classList.remove('bg-red-500', 'text-white', 'animate-pulse');
-            recordBtn.classList.add('bg-slate-100', 'text-slate-600');
-        };
+            recognition.onstart = () => {
+                recordBtn.classList.add('bg-red-500', 'text-white', 'animate-pulse');
+                recordBtn.classList.remove('bg-slate-100', 'text-slate-600');
+                window.speechSynthesis.cancel();
+            };
 
-        recognition.onresult = async (event) => {
-            const transcript = event.results[0][0].transcript;
-            console.log("Recorded:", transcript);
-            
-            const btnText = document.getElementById('talking-buddy').querySelector('span');
-            const originalEmoji = btnText.innerText;
-            btnText.innerText = '🤔';
+            recognition.onend = () => {
+                recordBtn.classList.remove('bg-red-500', 'text-white', 'animate-pulse');
+                recordBtn.classList.add('bg-slate-100', 'text-slate-600');
+            };
 
-            try {
-                const options = steps[currentStep].querySelectorAll('input[type="radio"]');
-                const response = await fetch('/assessment/resolve-voice', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        transcript: transcript,
-                        options: Array.from(options).map(opt => ({
-                            value: opt.value,
-                            text: opt.closest('label').querySelector('p').innerText
-                        }))
-                    })
-                });
+            recognition.onresult = async (event) => {
+                const transcript = event.results[0][0].transcript;
+                console.log("Recorded:", transcript);
                 
-                if (response.ok) {
-                    const data = await response.json();
-                    const targetValue = data.best_match;
-                    const radio = steps[currentStep].querySelector(`input[value="${targetValue}"]`);
-                    if (radio) {
-                        radio.checked = true;
-                        handleSelection(radio);
+                const btnText = document.getElementById('talking-buddy').querySelector('span');
+                const originalEmoji = btnText.innerText;
+                btnText.innerText = '🤔';
+
+                try {
+                    const options = steps[currentStep].querySelectorAll('input[type="radio"]');
+                    const response = await fetch('/assessment/resolve-voice', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            transcript: transcript,
+                            options: Array.from(options).map(opt => ({
+                                value: opt.value,
+                                text: opt.closest('label').querySelector('p').innerText
+                            }))
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        const targetValue = data.best_match;
+                        const radio = steps[currentStep].querySelector(`input[value="${targetValue}"]`);
+                        if (radio) {
+                            radio.checked = true;
+                            handleSelection(radio);
+                        }
+                    } else {
+                         alert("I couldn't quite match that to an option. Could you try again or click your choice?");
                     }
-                } else {
-                     alert("I couldn't quite match that to an option. Could you try again or click your choice?");
+                } catch (err) {
+                    console.error("Resolution error:", err);
+                } finally {
+                    btnText.innerText = originalEmoji;
                 }
-            } catch (err) {
-                console.error("Resolution error:", err);
-            } finally {
-                btnText.innerText = originalEmoji;
-            }
-        };
+            };
 
-        recordBtn.addEventListener('click', () => {
-            if (recordBtn.classList.contains('bg-red-500')) {
-                recognition.stop();
-            } else {
-                recognition.start();
-            }
-        });
-    } else {
-        recordBtn.style.display = 'none';
-    }
-    // --- End Voice Logic ---
-
-    window.speechSynthesis.speak(utterance);
+            recordBtn.addEventListener('click', () => {
+                if (recordBtn.classList.contains('bg-red-500')) {
+                    recognition.stop();
+                } else {
+                    recognition.start();
+                }
+            });
+        } else {
+            recordBtn.style.display = 'none';
         }
     }
+    // --- End Voice Logic ---
 
     // Refresh voices on load
     window.speechSynthesis.onvoiceschanged = () => getBestVoice();
 
     document.addEventListener('DOMContentLoaded', () => {
         showStep(currentStep);
+        initVoiceRecording();
 
         const form = document.getElementById('assessment-form');
         form.addEventListener('submit', () => {
