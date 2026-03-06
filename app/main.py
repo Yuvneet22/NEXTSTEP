@@ -148,6 +148,8 @@ def run_migrations():
                 migrations.append("ALTER TABLE counsellor_profiles ADD COLUMN is_verified BOOLEAN DEFAULT FALSE")
             if 'verification_status' not in cp_cols:
                 migrations.append("ALTER TABLE counsellor_profiles ADD COLUMN verification_status VARCHAR DEFAULT 'pending'")
+            if 'fee_locked' not in cp_cols:
+                migrations.append("ALTER TABLE counsellor_profiles ADD COLUMN fee_locked BOOLEAN DEFAULT FALSE")
         
         if migrations:
             with engine.connect() as conn:
@@ -713,7 +715,12 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
             models.Appointment.counsellor_id == user.id,
             models.Appointment.status == "scheduled"
         ).all()
-        return templates.TemplateResponse("counsellor_dashboard.html", {"request": request, "user": user, "profile": profile, "appointments": appointments})
+        # Fetch unread notifications for this counsellor
+        notifications = db.query(models.Notification).filter(
+            models.Notification.user_id == user.id,
+            models.Notification.is_read == False
+        ).order_by(models.Notification.created_at.desc()).all()
+        return templates.TemplateResponse("counsellor_dashboard.html", {"request": request, "user": user, "profile": profile, "appointments": appointments, "notifications": notifications})
     
     # Fetch assessment result to show on dashboard
     assessment = db.query(models.AssessmentResult).filter(models.AssessmentResult.user_id == user.id).first()
@@ -844,7 +851,8 @@ async def counsellor_update(
     
     profile = db.query(models.CounsellorProfile).filter(models.CounsellorProfile.user_id == user.id).first()
     if profile:
-        profile.fee = fee
+        if not profile.fee_locked:
+            profile.fee = fee
         profile.availability = {"text": availability_text}
         profile.account_details = account_data
     else:
@@ -1002,6 +1010,65 @@ async def unblock_counsellor(
         db.commit()
     
     return RedirectResponse(url="/admin", status_code=status.HTTP_302_FOUND)
+
+@app.post("/admin/update-counsellor-fee/{counsellor_id}")
+async def admin_update_counsellor_fee(
+    counsellor_id: int,
+    request: Request,
+    new_fee: float = Form(...),
+    db: Session = Depends(get_db)
+):
+    current_user = get_current_user(request, db)
+    if not current_user or current_user.role != "admin":
+        admin_email = os.getenv("ADMIN_EMAIL")
+        if not admin_email or current_user.email != admin_email:
+            return RedirectResponse(url="/dashboard", status_code=status.HTTP_302_FOUND)
+
+    profile = db.query(models.CounsellorProfile).filter(models.CounsellorProfile.user_id == counsellor_id).first()
+    if profile:
+        old_fee = profile.fee or 0.0
+        profile.fee = new_fee
+        profile.fee_locked = True  # Lock fee so counsellor cannot change it
+        db.commit()
+
+        # Notify counsellor about the fee change
+        if old_fee != new_fee:
+            if new_fee < old_fee:
+                message = f"Your session fee has been reduced by admin from ₹{old_fee:.0f} to ₹{new_fee:.0f}. If you have questions, please raise a support ticket."
+            elif new_fee > old_fee:
+                message = f"Your session fee has been increased by admin from ₹{old_fee:.0f} to ₹{new_fee:.0f}."
+            else:
+                message = f"Your session fee has been updated by admin to ₹{new_fee:.0f}."
+
+            notification = models.Notification(
+                user_id=counsellor_id,
+                type="fee_change",
+                message=message,
+            )
+            db.add(notification)
+            db.commit()
+
+    return RedirectResponse(url="/admin", status_code=status.HTTP_302_FOUND)
+
+@app.post("/notifications/{notif_id}/dismiss")
+async def dismiss_notification(
+    notif_id: int,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    user = get_current_user(request, db)
+    if not user:
+        return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+
+    notif = db.query(models.Notification).filter(
+        models.Notification.id == notif_id,
+        models.Notification.user_id == user.id
+    ).first()
+    if notif:
+        notif.is_read = True
+        db.commit()
+
+    return RedirectResponse(url="/dashboard", status_code=status.HTTP_302_FOUND)
 
 @app.get("/counsellors", response_class=HTMLResponse)
 async def list_counsellors(request: Request, db: Session = Depends(get_db)):
@@ -2161,7 +2228,8 @@ async def ticket_page(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
     if not user:
         return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
-    return templates.TemplateResponse("ticket.html", {"request": request, "user": user})
+    tickets = db.query(models.Ticket).filter(models.Ticket.user_id == user.id).order_by(models.Ticket.timestamp.desc()).all()
+    return templates.TemplateResponse("ticket.html", {"request": request, "user": user, "tickets": tickets})
 
 @app.post("/ticket/submit")
 async def submit_ticket(
@@ -2182,7 +2250,7 @@ async def submit_ticket(
     db.add(new_ticket)
     db.commit()
     
-    return RedirectResponse(url="/dashboard", status_code=status.HTTP_302_FOUND)
+    return RedirectResponse(url="/ticket", status_code=status.HTTP_302_FOUND)
 
 
 # --- Career Path Generation ---
@@ -2362,6 +2430,118 @@ async def view_roadmap_detail(path_id: int, request: Request, db: Session = Depe
         
     return templates.TemplateResponse("career_roadmap_v2.html", {"request": request, "user": user, "path": path})
 
+
+# --- College Recommendation Routes ---
+
+class CollegeRecRequest(BaseModel):
+    career_title: str
+
+@app.post("/career/colleges/generate")
+async def generate_college_recommendations(request: Request, req: CollegeRecRequest, db: Session = Depends(get_db)):
+    user = get_current_user(request, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    result = db.query(models.AssessmentResult).filter(models.AssessmentResult.user_id == user.id).first()
+
+    current_class = result.selected_class if result else "12th"
+    archetype = result.phase_2_category if result else "Explorer"
+    personality = result.personality if result else "Ambivert"
+
+    prompt = f"""
+    You are an expert 'College Admission Strategist' and Academic Mentor for Indian and global students.
+
+    Student Profile:
+    - Current Stage: {current_class}
+    - Archetype: {archetype}
+    - Personality: {personality}
+    - Target Career: {req.career_title}
+
+    TASK:
+    Recommend the Top 5 Colleges/Institutes (mix of Indian and International) that are BEST suited 
+    for a student aiming to become a "{req.career_title}".
+
+    For EACH college, provide:
+    1. "name" — Full official name
+    2. "location" — City, Country
+    3. "ranking" — A short ranking label (e.g. "Top 3 in India", "#12 Globally")
+    4. "admission_criteria" — Detailed admission requirements (exams, cutoffs, key dates, eligibility). 3-4 sentences.
+    5. "courses_offered" — List of 3-5 specific relevant degree programs (e.g. "B.Tech Computer Science", "M.Sc Data Science")
+    6. "placement_rate" — Percentage or descriptor (e.g. "95%", "Near 100%")
+    7. "avg_package" — Average salary package for graduates (in INR or USD)
+    8. "top_recruiters" — List of 3-4 top companies that recruit from this institute
+    9. "highlights" — 2-3 sentence overview of what makes this institute special for this career
+    10. "website" — Official website URL
+
+    Also provide:
+    - "preparation_tips" — 3-4 bullet points of actionable advice for gaining admission to these institutes
+
+    OUTPUT FORMAT (VALID JSON ONLY):
+    {{
+      "colleges": [
+        {{
+          "name": "...",
+          "location": "...",
+          "ranking": "...",
+          "admission_criteria": "...",
+          "courses_offered": ["...", "...", "..."],
+          "placement_rate": "...",
+          "avg_package": "...",
+          "top_recruiters": ["...", "...", "..."],
+          "highlights": "...",
+          "website": "https://..."
+        }}
+      ],
+      "preparation_tips": ["...", "...", "...", "..."]
+    }}
+    """
+
+    try:
+        clean_text = await generate_content_with_fallback(prompt)
+        college_data = json.loads(clean_text)
+
+        new_rec = models.CollegeRecommendation(
+            user_id=user.id,
+            career_title=req.career_title,
+            college_data=college_data,
+        )
+        db.add(new_rec)
+        db.commit()
+        db.refresh(new_rec)
+
+        return {"success": True, "rec_id": new_rec.id}
+    except Exception as e:
+        print(f"College Recommendation Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate college recommendations: {str(e)}")
+
+
+@app.get("/career/colleges", response_class=HTMLResponse)
+async def view_college_recommendations(request: Request, db: Session = Depends(get_db)):
+    user = get_current_user(request, db)
+    if not user:
+        return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+
+    recs = db.query(models.CollegeRecommendation).filter(models.CollegeRecommendation.user_id == user.id).order_by(models.CollegeRecommendation.created_at.desc()).all()
+    return templates.TemplateResponse("college_recommendations.html", {"request": request, "user": user, "recs": recs})
+
+
+@app.get("/career/colleges/{rec_id}", response_class=HTMLResponse)
+async def view_college_detail(rec_id: int, request: Request, db: Session = Depends(get_db)):
+    user = get_current_user(request, db)
+    if not user:
+        return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+
+    rec = db.query(models.CollegeRecommendation).filter(
+        models.CollegeRecommendation.id == rec_id,
+        models.CollegeRecommendation.user_id == user.id
+    ).first()
+    if not rec:
+        raise HTTPException(status_code=404, detail="College recommendation not found")
+
+    return templates.TemplateResponse("college_detail.html", {"request": request, "user": user, "rec": rec})
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
+
