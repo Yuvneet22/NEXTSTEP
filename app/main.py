@@ -1161,6 +1161,21 @@ async def create_razorpay_order(counsellor_id: int, request: Request, fee: float
     
     try:
         order = razorpay_client.order.create(data=data)
+
+        # ── Record Payment in DB for admin split tracking ──────────────────
+        try:
+            payment_record = models.Payment(
+                razorpay_order_id=order["id"],
+                amount=fee,
+                status="created"
+            )
+            db.add(payment_record)
+            db.commit()
+            db.refresh(payment_record)
+            print(f"DEBUG: Payment record created: order={order['id']}, amount=₹{fee}")
+        except Exception as pe:
+            print(f"DEBUG: Payment record creation skipped: {pe}")
+
         return order
     except Exception as e:
         print(f"Razorpay Error: {e}")
@@ -1409,6 +1424,52 @@ async def verify_payment(request: Request, background_tasks: BackgroundTasks, db
     db.add(appointment)
     db.commit()
     db.refresh(appointment)
+
+    # ── Record Payment + Transfer for admin split tracking ─────────────────
+    try:
+        # Get the counsellor's fee for accurate split calculation
+        counsellor_profile = db.query(models.CounsellorProfile).filter(
+            models.CounsellorProfile.user_id == counsellor_id
+        ).first()
+        fee_amount = counsellor_profile.fee if counsellor_profile else 0.0
+
+        # Find or create the Payment record
+        payment_record = db.query(models.Payment).filter(
+            models.Payment.razorpay_order_id == razorpay_order_id
+        ).first()
+
+        if payment_record:
+            # Update existing record (created during order creation)
+            payment_record.razorpay_payment_id = razorpay_payment_id
+            payment_record.status = "captured"
+            payment_record.session_id = appointment.id
+        else:
+            # Create new record (fallback)
+            payment_record = models.Payment(
+                session_id=appointment.id,
+                razorpay_order_id=razorpay_order_id,
+                razorpay_payment_id=razorpay_payment_id,
+                amount=fee_amount,
+                status="captured"
+            )
+            db.add(payment_record)
+            db.commit()
+            db.refresh(payment_record)
+
+        # Create Transfer record (70/30 split)
+        counselor_share = round(fee_amount * 0.70, 2)
+        transfer_record = models.Transfer(
+            payment_id=payment_record.id,
+            counsellor_id=counsellor_id,
+            amount=counselor_share,
+            status="pending"  # Will become 'processed' when manually/auto transferred
+        )
+        db.add(transfer_record)
+        db.commit()
+
+        print(f"DEBUG: Split recorded — Total: ₹{fee_amount}, Counselor (70%): ₹{counselor_share}, Platform (30%): ₹{round(fee_amount - counselor_share, 2)}")
+    except Exception as pe:
+        print(f"DEBUG: Split record creation error: {pe}")
     
     # Send Emails
     student_email = user.email
