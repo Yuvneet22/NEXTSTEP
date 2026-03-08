@@ -861,43 +861,63 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
     })
 
 @app.get("/admin", response_class=HTMLResponse)
-async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
+async def admin_dashboard(
+    request: Request, 
+    db: Session = Depends(get_db),
+    user_page: int = 1,
+    feedback_page: int = 1,
+    ticket_page: int = 1,
+    page_size: int = 20
+):
     try:
-        user = get_current_user(request, db)
-        if not user:
+        current_user = get_current_user(request, db)
+        if not current_user:
              return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
         
         admin_email = os.getenv("ADMIN_EMAIL")
-        if user.role != "admin" and (not admin_email or user.email != admin_email):
-            print(f"DEBUG: Admin access denied for {user.email}")
+        if current_user.role != "admin" and (not admin_email or current_user.email != admin_email):
+            print(f"DEBUG: Admin access denied for {current_user.email}")
             return RedirectResponse(url="/dashboard?error=Admin access denied", status_code=status.HTTP_302_FOUND)
 
-        all_users = db.query(models.User).all()
-        all_feedback = db.query(models.Feedback).order_by(models.Feedback.timestamp.desc()).all()
-        all_tickets = db.query(models.Ticket).order_by(models.Ticket.timestamp.desc()).all()
+        # ─── Paginated Data ──────────────────────────────────────────────
+        all_users = db.query(models.User).order_by(models.User.id.desc()).offset((user_page - 1) * page_size).limit(page_size).all()
+        total_users = db.query(models.User).count()
+
+        all_feedback = db.query(models.Feedback).order_by(models.Feedback.timestamp.desc()).offset((feedback_page - 1) * page_size).limit(page_size).all()
+        total_feedback = db.query(models.Feedback).count()
+
+        all_tickets = db.query(models.Ticket).order_by(models.Ticket.timestamp.desc()).offset((ticket_page - 1) * page_size).limit(page_size).all()
+        total_tickets = db.query(models.Ticket).count()
+
         pending_counsellors = db.query(models.CounsellorProfile).filter(models.CounsellorProfile.verification_status == "pending").all()
         
-        # Fetch all counsellor profiles with session counts
+        # ─── Optimized Counsellor Stats (Single Query) ───────────────────
+        from sqlalchemy import func as sql_func
+        
+        # Get all completed sessions count per counsellor
+        completed_sessions = db.query(
+            models.Appointment.counsellor_id,
+            sql_func.count(models.Appointment.id).label("count")
+        ).filter(models.Appointment.status == "completed").group_by(models.Appointment.counsellor_id).all()
+        completed_map = {row.counsellor_id: row.count for row in completed_sessions}
+
+        # Get total sessions count per counsellor
+        total_sessions = db.query(
+            models.Appointment.counsellor_id,
+            sql_func.count(models.Appointment.id).label("count")
+        ).group_by(models.Appointment.counsellor_id).all()
+        total_map = {row.counsellor_id: row.count for row in total_sessions}
+
         all_counsellors = db.query(models.CounsellorProfile).all()
         for cp in all_counsellors:
-            try:
-                cp.session_count = db.query(models.Appointment).filter(
-                    models.Appointment.counsellor_id == cp.user_id,
-                    models.Appointment.status == "completed"
-                ).count()
-                cp.total_sessions = db.query(models.Appointment).filter(
-                    models.Appointment.counsellor_id == cp.user_id
-                ).count()
-            except Exception:
-                cp.session_count = 0
-                cp.total_sessions = 0
+            cp.session_count = completed_map.get(cp.user_id, 0)
+            cp.total_sessions = total_map.get(cp.user_id, 0)
 
         # ─── Payment Split Analytics ──────────────────────────────────────
-        from sqlalchemy import func as sql_func
         try:
             all_payments = db.query(models.Payment).order_by(models.Payment.created_at.desc()).limit(20).all()
-            all_transfers = db.query(models.Transfer).all()
-
+            
+            # Using scalars directly for performance
             total_revenue = db.query(sql_func.sum(models.Payment.amount)).filter(
                 models.Payment.status == "captured"
             ).scalar() or 0.0
@@ -908,40 +928,32 @@ async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
 
             platform_commission = total_revenue - total_counselor_payouts
 
-            pending_transfers = db.query(models.Transfer).filter(
-                models.Transfer.status == "pending"
-            ).count()
-
-            failed_transfers = db.query(models.Transfer).filter(
-                models.Transfer.status == "failed"
-            ).count()
-
-            captured_payments_count = db.query(models.Payment).filter(
-                models.Payment.status == "captured"
-            ).count()
+            pending_transfers = db.query(models.Transfer).filter(models.Transfer.status == "pending").count()
+            failed_transfers = db.query(models.Transfer).filter(models.Transfer.status == "failed").count()
+            captured_payments_count = db.query(models.Payment).filter(models.Payment.status == "captured").count()
         except Exception as pe:
             print(f"Payment analytics error: {pe}")
-            all_payments = []
-            all_transfers = []
-            total_revenue = 0.0
-            total_counselor_payouts = 0.0
-            platform_commission = 0.0
-            pending_transfers = 0
-            failed_transfers = 0
-            captured_payments_count = 0
+            all_payments, total_revenue, total_counselor_payouts, platform_commission = [], 0.0, 0.0, 0.0
+            pending_transfers, failed_transfers, captured_payments_count = 0, 0, 0
         
-        # Fetch Moderation Flags
-        moderation_flags = db.query(models.ModerationFlag).order_by(models.ModerationFlag.timestamp.desc()).all()
+        # Fetch Moderation Flags (Limited for performance)
+        moderation_flags = db.query(models.ModerationFlag).order_by(models.ModerationFlag.timestamp.desc()).limit(50).all()
 
         return templates.TemplateResponse("admin_dashboard.html", {
             "request": request, 
-            "user": user, 
+            "user": current_user, 
             "users": all_users,
+            "total_users": total_users,
+            "user_page": user_page,
             "feedbacks": all_feedback,
+            "total_feedback": total_feedback,
+            "feedback_page": feedback_page,
             "tickets": all_tickets,
+            "total_tickets": total_tickets,
+            "ticket_page": ticket_page,
+            "page_size": page_size,
             "pending_counsellors": pending_counsellors,
             "all_counsellors": all_counsellors,
-            # Split payment data
             "all_payments": all_payments,
             "total_revenue": total_revenue,
             "total_counselor_payouts": total_counselor_payouts,

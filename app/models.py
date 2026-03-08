@@ -12,7 +12,7 @@ class User(Base):
     contact_number = Column(String)
     profile_photo = Column(String, nullable=True)
     bio = Column(Text, nullable=True)
-    role = Column(String, default="student")
+    role = Column(String, default="student", index=True)
     is_suspended = Column(Boolean, default=False)
     
     assessment = relationship("AssessmentResult", back_populates="user", uselist=False)
@@ -80,9 +80,9 @@ class Ticket(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     subject = Column(String)
     description = Column(Text)
-    status = Column(String, default="Open")
+    status = Column(String, default="Open", index=True)
     admin_reply = Column(Text, nullable=True)
-    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+    timestamp = Column(DateTime(timezone=True), server_default=func.now(), index=True)
 
     user = relationship("User", back_populates="tickets")
 
@@ -116,7 +116,7 @@ class CounsellorProfile(Base):
     certificates = Column(JSON, nullable=True) # List of file paths
     experience = Column(Text, nullable=True)
     is_verified = Column(Boolean, default=False)
-    verification_status = Column(String, default="pending") # pending, approved, rejected
+    verification_status = Column(String, default="pending", index=True) # pending, approved, rejected
     tnc_accepted = Column(Boolean, default=False)
     tnc_accepted_at = Column(DateTime, nullable=True)
     is_blocked = Column(Boolean, default=False)
@@ -142,10 +142,10 @@ class Appointment(Base):
     __tablename__ = "appointments"
 
     id = Column(Integer, primary_key=True, index=True)
-    student_id = Column(Integer, ForeignKey("users.id"))
-    counsellor_id = Column(Integer, ForeignKey("users.id"))
+    student_id = Column(Integer, ForeignKey("users.id"), index=True)
+    counsellor_id = Column(Integer, ForeignKey("users.id"), index=True)
     appointment_time = Column(DateTime)
-    status = Column(String, default="requested")  # requested, accepted, rejected, completed, cancelled
+    status = Column(String, default="requested", index=True)  # requested, accepted, rejected, completed, cancelled
     payment_status = Column(String, default="pending")  # pending, paid
     meeting_link = Column(String, nullable=True)
     razorpay_order_id = Column(String, nullable=True)
@@ -223,8 +223,8 @@ class ModerationFlag(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     content = Column(Text)
     chat_type = Column(String)  # "ai" or "p2p"
-    status = Column(String, default="pending_review")  # pending_review, dismissed, action_taken
-    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+    status = Column(String, default="pending_review", index=True)  # pending_review, dismissed, action_taken
+    timestamp = Column(DateTime(timezone=True), server_default=func.now(), index=True)
 
     user = relationship("User", back_populates="moderation_flags")
 
@@ -243,7 +243,7 @@ class Payment(Base):
     razorpay_payment_id = Column(String, nullable=True, unique=True, index=True)
     amount = Column(Float)  # Total amount in INR
     currency = Column(String, default="INR")
-    status = Column(String, default="created")  # created, captured, failed
+    status = Column(String, default="created", index=True)  # created, captured, failed
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -261,7 +261,7 @@ class Transfer(Base):
     counsellor_id = Column(Integer, ForeignKey("users.id"))
     amount = Column(Float)  # Counselor's share in INR
     razorpay_transfer_id = Column(String, nullable=True, unique=True)
-    status = Column(String, default="pending")  # pending, processed, failed
+    status = Column(String, default="pending", index=True)  # pending, processed, failed
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
