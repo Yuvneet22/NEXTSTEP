@@ -84,12 +84,12 @@
                                     <textarea id="{{ q.id }}" name="{{ q.id }}" rows="3" required
                                         class="shadow-sm focus:ring-4 focus:ring-violet-500/20 focus:border-violet-500 block w-full sm:text-lg border-slate-200 rounded-xl p-4 transition-all duration-300 bg-white/80 backdrop-blur-sm"
                                         placeholder="{{ q.placeholder or 'I love...' }}"></textarea>
-                                    <button type="button" onclick="toggleSpeech('{{ q.id }}')"
+                                    <button type="button" onclick="toggleSpeech('{{ q.id }}', '10th')"
                                         class="inline-flex items-center px-4 py-2 border border-slate-200 shadow-sm text-2xl rounded-xl text-slate-700 bg-white hover:bg-violet-50 hover:text-violet-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 transition-all"
-                                        id="btn-{{ q.id }}" title="Record Audio">🎤
+                                        id="btn-10th-{{ q.id }}" title="Record Audio">🎤
                                     </button>
                                 </div>
-                                <p id="status-{{ q.id }}" class="text-sm font-bold text-violet-600 mt-2 hidden animate-pulse flex items-center gap-2">
+                                <p id="status-10th-{{ q.id }}" class="text-sm font-bold text-violet-600 mt-2 hidden animate-pulse flex items-center gap-2">
                                     <span class="h-2 w-2 bg-violet-600 rounded-full"></span> Listening...
                                 </p>
                             </div>
@@ -149,12 +149,12 @@
                                 <textarea id="{{ q.id }}" name="{{ q.id }}" rows="4" required
                                     class="shadow-sm focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 block w-full sm:text-lg border-slate-200 rounded-xl p-4 transition-all duration-300 bg-white/80 backdrop-blur-sm"
                                     placeholder="I would..."></textarea>
-                                <button type="button" onclick="toggleSpeech('{{ q.id }}')"
+                                <button type="button" onclick="toggleSpeech('{{ q.id }}', '12th')"
                                     class="inline-flex items-center px-4 py-2 border border-slate-200 shadow-sm text-2xl rounded-xl text-slate-700 bg-white hover:bg-indigo-50 hover:text-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
-                                    id="btn-{{ q.id }}" title="Record Audio">🎤
+                                    id="btn-12th-{{ q.id }}" title="Record Audio">🎤
                                 </button>
                             </div>
-                            <p id="status-{{ q.id }}"
+                            <p id="status-12th-{{ q.id }}"
                                 class="text-sm font-bold text-indigo-600 mt-2 hidden animate-pulse flex items-center gap-2">
                                 <span class="h-2 w-2 bg-indigo-600 rounded-full"></span> Listening...
                             </p>
@@ -354,10 +354,11 @@
 
     window.speechSynthesis.onvoiceschanged = () => getBestVoice();
 
-    function toggleSpeech(questionId) {
+    function toggleSpeech(questionId, modePrefix = '') {
         if (!('webkitSpeechRecognition' in window)) { alert("Speech recognition not supported. Please use Chrome."); return; }
-        const btn = document.getElementById(`btn-${questionId}`);
-        const status = document.getElementById(`status-${questionId}`);
+        const pfx = modePrefix ? modePrefix + '-' : '';
+        const btn = document.getElementById(`btn-${pfx}${questionId}`);
+        const status = document.getElementById(`status-${pfx}${questionId}`);
         const textarea = document.getElementById(questionId);
         if (btn.classList.contains('listening')) { if (window.recognition) window.recognition.stop(); return; }
         const recognition = new webkitSpeechRecognition();
@@ -365,16 +366,19 @@
         recognition.continuous = false; recognition.interimResults = false; recognition.lang = 'en-US';
         recognition.onstart = function () { btn.classList.add('listening'); btn.classList.add('bg-red-50', 'text-red-600', 'border-red-200'); btn.innerHTML = '⏹️'; status.classList.remove('hidden'); };
         recognition.onresult = function (event) { const transcript = event.results[0][0].transcript; textarea.value = (textarea.value ? textarea.value + " " : "") + transcript; };
-        recognition.onerror = () => resetUI(questionId);
-        recognition.onend = () => resetUI(questionId);
+        recognition.onerror = () => resetUI(questionId, modePrefix);
+        recognition.onend = () => resetUI(questionId, modePrefix);
         recognition.start();
     }
 
-    function resetUI(questionId) {
-        const btn = document.getElementById(`btn-${questionId}`);
-        const status = document.getElementById(`status-${questionId}`);
-        btn.classList.remove('listening', 'bg-red-50', 'text-red-600', 'border-red-200');
-        btn.classList.add('bg-white'); btn.innerHTML = '🎤'; status.classList.add('hidden');
+    function resetUI(questionId, modePrefix = '') {
+        const pfx = modePrefix ? modePrefix + '-' : '';
+        const btn = document.getElementById(`btn-${pfx}${questionId}`);
+        const status = document.getElementById(`status-${pfx}${questionId}`);
+        if(btn) btn.classList.remove('listening', 'bg-red-50', 'text-red-600', 'border-red-200');
+        if(btn) btn.classList.add('bg-white'); 
+        if(btn) btn.innerHTML = '🎤'; 
+        if(status) status.classList.add('hidden');
     }
 
     document.getElementById('assessment-form').addEventListener('submit', function () {

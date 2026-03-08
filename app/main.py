@@ -791,6 +791,24 @@ async def assessment_result(request: Request, db: Session = Depends(get_db)):
 
     return templates.TemplateResponse("result.html", {"request": request, "user": user, "result": result})
 
+@app.get("/share/report/{result_id}", response_class=HTMLResponse)
+async def share_report(result_id: int, request: Request, db: Session = Depends(get_db)):
+    """Publicly shareable route for career reports."""
+    result = db.query(models.AssessmentResult).filter(models.AssessmentResult.id == result_id).first()
+    if not result:
+        raise HTTPException(status_code=404, detail="Report not found")
+    
+    owner = db.query(models.User).filter(models.User.id == result.user_id).first()
+    current_user = get_current_user(request, db)
+    
+    return templates.TemplateResponse("result.html", {
+        "request": request, 
+        "user": current_user, 
+        "owner": owner,
+        "result": result,
+        "is_public_share": True 
+    })
+
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
@@ -2241,6 +2259,9 @@ async def assessment_final_submit(request: Request, db: Session = Depends(get_db
                         if isinstance(hobby_rec, dict):
                             title = hobby_rec.get('title', 'Alternative Path')
                             reason = hobby_rec.get('reason', '')
+                            # Ensure final_analysis is a string before appending
+                            if not result.final_analysis:
+                                result.final_analysis = ""
                             result.final_analysis += f"\n\n**Special Interest Recommendation:** Based on your hobbies, you might also consider a career as a {title}. {reason}"
                 else:
                     # Map 'goal_options' to 'stream_pros' for storage
