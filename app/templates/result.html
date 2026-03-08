@@ -443,6 +443,23 @@
                         alert('Shareable link copied to clipboard!');
                     });
                 }
+
+                function nativeShare(title, url) {
+                    if (navigator.share) {
+                        navigator.share({
+                            title: title,
+                            text: "I just found my professional archetype on CareStance! Check it out.",
+                            url: url,
+                        }).catch(console.error);
+                    }
+                }
+
+                // Show native share button if supported
+                document.addEventListener('DOMContentLoaded', () => {
+                    if (navigator.share) {
+                        document.getElementById('nativeShareBtn')?.classList.remove('hidden');
+                    }
+                });
             </script>
 
             <!-- Social Sharing & PDF Section -->
@@ -453,17 +470,35 @@
                 </h3>
                 <div class="flex flex-wrap justify-center gap-4">
                     {% set share_url = request.base_url ~ "share/report/" ~ result.id %}
-                    <a href="https://wa.me/?text=I%20just%20found%20my%20perfect%20career%20path%20on%20CareStance!%20Check%20out%20my%20result:%20{{ share_url|urlencode }}" target="_blank" rel="noopener" class="w-12 h-12 bg-[#25D366] text-white rounded-2xl flex items-center justify-center text-xl hover:scale-110 transition-transform shadow-lg" title="Share on WhatsApp">
+                    {% set share_text = "I just found my perfect career path on CareStance! See my profile: " ~ result.phase_2_category %}
+                    
+                    <!-- WhatsApp -->
+                    <a href="https://wa.me/?text={{ (share_text ~ ' ' ~ share_url)|urlencode }}" target="_blank" rel="noopener" class="w-12 h-12 bg-[#25D366] text-white rounded-2xl flex items-center justify-center text-xl hover:scale-110 transition-transform shadow-lg" title="Share on WhatsApp">
                         <i class="fab fa-whatsapp"></i>
                     </a>
+                    <!-- LinkedIn -->
                     <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ share_url|urlencode }}" target="_blank" rel="noopener" class="w-12 h-12 bg-[#0077B5] text-white rounded-2xl flex items-center justify-center text-xl hover:scale-110 transition-transform shadow-lg" title="Share on LinkedIn">
                         <i class="fab fa-linkedin-in"></i>
                     </a>
-                    <a href="https://twitter.com/intent/tweet?text=I%20just%20unlocked%20my%20career%20roadmap%20on%20CareStance!&url={{ share_url|urlencode }}" target="_blank" rel="noopener" class="w-12 h-12 bg-[#1DA1F2] text-white rounded-2xl flex items-center justify-center text-xl hover:scale-110 transition-transform shadow-lg" title="Share on Twitter">
+                    <!-- Facebook -->
+                    <a href="https://www.facebook.com/sharer/sharer.php?u={{ share_url|urlencode }}" target="_blank" rel="noopener" class="w-12 h-12 bg-[#1877F2] text-white rounded-2xl flex items-center justify-center text-xl hover:scale-110 transition-transform shadow-lg" title="Share on Facebook">
+                        <i class="fab fa-facebook-f"></i>
+                    </a>
+                    <!-- Twitter -->
+                    <a href="https://twitter.com/intent/tweet?text={{ share_text|urlencode }}&url={{ share_url|urlencode }}" target="_blank" rel="noopener" class="w-12 h-12 bg-[#1DA1F2] text-white rounded-2xl flex items-center justify-center text-xl hover:scale-110 transition-transform shadow-lg" title="Share on Twitter">
                         <i class="fab fa-twitter"></i>
                     </a>
+                    <!-- Reddit -->
+                    <a href="https://www.reddit.com/submit?url={{ share_url|urlencode }}&title={{ share_text|urlencode }}" target="_blank" rel="noopener" class="w-12 h-12 bg-[#FF4500] text-white rounded-2xl flex items-center justify-center text-xl hover:scale-110 transition-transform shadow-lg" title="Share on Reddit">
+                        <i class="fab fa-reddit-alien"></i>
+                    </a>
+                    <!-- Copy Link -->
                     <button onclick="copyToClipboard('{{ share_url }}')" class="w-12 h-12 bg-slate-700 text-white rounded-2xl flex items-center justify-center text-xl hover:scale-110 transition-transform shadow-lg" title="Copy Link">
                         <i class="fas fa-link"></i>
+                    </button>
+                    <!-- Native Share (Mobile) -->
+                    <button id="nativeShareBtn" onclick="nativeShare('{{ share_text }}', '{{ share_url }}')" class="hidden w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center text-xl hover:scale-110 transition-transform shadow-lg" title="Share">
+                        <i class="fas fa-share-nodes"></i>
                     </button>
                 </div>
                 <p class="text-slate-500 text-xs mt-6">Share your result to inspire others and track your progress together.</p>
@@ -521,15 +556,47 @@
                 <div class="absolute -top-10 -left-10 w-40 h-40 bg-purple-500 rounded-full blur-[80px] opacity-20"></div>
             </div>
 
-            <div class="px-8 pb-8 text-center no-print">
-                 <button onclick="downloadCard()" class="inline-flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition shadow-lg">
-                    <i class="fas fa-camera"></i>
-                    <span>Save Share Card</span>
+            <div class="px-8 pb-8 text-center no-print flex flex-wrap justify-center gap-4">
+                 <button onclick="downloadCard()" class="inline-flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition shadow-lg" title="Save image to your device">
+                    <i class="fas fa-download"></i>
+                    <span>Download Card</span>
+                </button>
+                <button onclick="copyImageToClipboard()" class="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg" title="Copy image to paste into posts">
+                    <i class="fas fa-copy"></i>
+                    <span>Copy Card Image</span>
                 </button>
             </div>
 
             <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
             <script>
+                async function copyImageToClipboard() {
+                    const card = document.getElementById('share-card');
+                    try {
+                        const canvas = await html2canvas(card, {
+                            backgroundColor: null,
+                            scale: 2,
+                            useCORS: true
+                        });
+                        canvas.toBlob(async (blob) => {
+                            try {
+                                if (navigator.clipboard && navigator.clipboard.write) {
+                                    await navigator.clipboard.write([
+                                        new ClipboardItem({ 'image/png': blob })
+                                    ]);
+                                    alert('Card image copied to clipboard! You can now paste it directly into LinkedIn, WhatsApp, or Twitter.');
+                                } else {
+                                    alert('Copying images is not supported in this browser. Please use the Download button instead.');
+                                }
+                            } catch (err) {
+                                console.error('Clipboard error:', err);
+                                alert('Failed to copy image. Please try downloading it.');
+                            }
+                        }, 'image/png');
+                    } catch (err) {
+                        console.error('Canvas error:', err);
+                    }
+                }
+
                 async function downloadCard() {
                     const card = document.getElementById('share-card');
                     const canvas = await html2canvas(card, {
@@ -538,6 +605,32 @@
                         logging: false,
                         useCORS: true
                     });
+                    
+                    // On mobile, try to use native share with the image file if supported
+                    if (navigator.share && navigator.canShare && canvas.toBlob) {
+                        canvas.toBlob(async (blob) => {
+                            const file = new File([blob], "CareStance-Result.png", { type: "image/png" });
+                            if (navigator.canShare({ files: [file] })) {
+                                try {
+                                    await navigator.share({
+                                        files: [file],
+                                        title: 'My Career Blueprint',
+                                        text: 'Check out my career archetype from CareStance!'
+                                    });
+                                    return; // Successfully shared
+                                } catch (err) {
+                                    console.log("Native image share failed, falling back to download", err);
+                                }
+                            }
+                            // Fallback to download if sharing failed or not supported for files
+                            triggerDownload(canvas);
+                        });
+                    } else {
+                        triggerDownload(canvas);
+                    }
+                }
+
+                function triggerDownload(canvas) {
                     const link = document.createElement('a');
                     link.download = `CareStance-Result-${new Date().getTime()}.png`;
                     link.href = canvas.toDataURL('image/png');
