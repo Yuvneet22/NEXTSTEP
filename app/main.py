@@ -292,6 +292,16 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
 
 # Routes
 
+@app.get("/ads.txt")
+async def ads_txt():
+    # Looks for ads.txt in the project root (one level above 'app' folder)
+    root_dir = os.path.dirname(BASE_DIR)
+    ads_path = os.path.join(root_dir, "ads.txt")
+    if os.path.exists(ads_path):
+        from fastapi.responses import FileResponse
+        return FileResponse(ads_path)
+    return Response(content="File not found", status_code=404)
+
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
