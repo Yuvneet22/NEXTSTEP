@@ -26,6 +26,8 @@ import razorpay
 from . import models
 from .email_utils import send_email, get_booking_template, get_cancellation_template, get_reset_password_template
 from itsdangerous import URLSafeTimedSerializer
+from .data.career_keywords import career_keywords
+from .utils.resource_aggregator import ResourceAggregator
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
@@ -3028,6 +3030,39 @@ async def view_roadmap_detail(path_id: int, request: Request, db: Session = Depe
         "appointments": appointments
     })
 
+
+
+@app.get("/career/roadmap/{path_id}/resources", response_class=HTMLResponse)
+async def view_roadmap_resources(path_id: int, request: Request, db: Session = Depends(get_db)):
+    user = get_current_user(request, db)
+    if not user:
+        return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+    
+    path = db.query(models.CareerPath).filter(models.CareerPath.id == path_id, models.CareerPath.user_id == user.id).first()
+    if not path:
+        raise HTTPException(status_code=404, detail="Roadmap not found")
+        
+    career_title = path.career_title
+    keywords = career_keywords.get(career_title, [career_title]) # Fallback to title if not in keywords mapping
+    
+    resources = {
+        "ndli": ResourceAggregator.get_ndli_link(keywords),
+        "arxiv": ResourceAggregator.get_arxiv_link(keywords),
+        "youtube": ResourceAggregator.get_youtube_link(keywords),
+        "scholar": ResourceAggregator.get_google_scholar_link(keywords)
+    }
+    
+    # NEW: Fetch AI recommendations
+    ai_recommendations = await ResourceAggregator.get_ai_recommendations(career_title, generate_content_with_fallback)
+    
+    return templates.TemplateResponse("resources_dashboard.html", {
+        "request": request, 
+        "user": user, 
+        "path": path,
+        "resources": resources,
+        "ai_recommendations": ai_recommendations,
+        "keywords": keywords
+    })
 
 # --- College Recommendation Routes ---
 

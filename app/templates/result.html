@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 
 {% block adsense %}
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6546135271987768" crossorigin="anonymous"></script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6546135271987768"
+    crossorigin="anonymous"></script>
 {% endblock %}
 
 {% block title %}Your Career Blueprint | CareStance{% endblock %}
@@ -10,17 +11,19 @@
 <!-- Open Graph / Facebook -->
 <meta property="og:type" content="website">
 <meta property="og:url" content="{{ request.base_url }}share/report/{{ result.id }}">
-<meta property="og:title" content="My Career Blueprint: {{ result.phase_2_category }}">
+<meta property="og:title"
+    content="Career Blueprint: {{ result.recommended_stream if result.recommended_stream else result.phase_2_category }}">
 <meta property="og:description"
-    content="I just found my professional archetype on CareStance! My personality is suited for {{ result.phase_2_category }}. Check out my full report.">
+    content="🚀 I just created my Career Blueprint on CareerStance! My goal: {{ result.recommended_stream if result.recommended_stream else result.phase_2_category }}. Build your own at carestance.me #CareerStance">
 <meta property="og:image" content="{{ request.base_url }}static/images/image.png">
 
 <!-- Twitter -->
 <meta property="twitter:card" content="summary_large_image">
 <meta property="twitter:url" content="{{ request.base_url }}share/report/{{ result.id }}">
-<meta property="twitter:title" content="My Career Blueprint: {{ result.phase_2_category }}">
+<meta property="twitter:title"
+    content="Career Blueprint: {{ result.recommended_stream if result.recommended_stream else result.phase_2_category }}">
 <meta property="twitter:description"
-    content="I just found my professional archetype on CareStance! My personality is suited for {{ result.phase_2_category }}.">
+    content="🚀 I just created my Career Blueprint on CareerStance! My goal: {{ result.recommended_stream if result.recommended_stream else result.phase_2_category }}">
 <meta property="twitter:image" content="{{ request.base_url }}static/images/image.png">
 {% endblock %}
 
@@ -452,11 +455,11 @@
                     });
                 }
 
-                function nativeShare(title, url) {
+                function nativeShare(text, url) {
                     if (navigator.share) {
                         navigator.share({
-                            title: title,
-                            text: "I just found my professional archetype on CareStance! Check it out.",
+                            title: "My Career Blueprint | CareStance",
+                            text: text,
                             url: url,
                         }).catch(console.error);
                     }
@@ -480,8 +483,11 @@
                 </h3>
                 <div class="flex flex-wrap justify-center gap-4">
                     {% set share_url = request.base_url ~ "share/report/" ~ result.id %}
-                    {% set share_text = "I just found my perfect career path on CareStance! See my profile: " ~
-                    result.phase_2_category %}
+                    {% set share_text = "🚀 I just created my Career Blueprint on CareerStance!\n\nMy goal: " ~
+                    (result.recommended_stream if result.recommended_stream else result.phase_2_category) ~
+                    "\n\nCareerStance helped me understand the skills, learning roadmap, and resources needed to achieve
+                    it.\n\nBuild your own career blueprint here:\nhttps://carestance.me\n\n#CareerStance #CareerGrowth"
+                    %}
 
                     <!-- WhatsApp -->
                     <a href="https://wa.me/?text={{ (share_text ~ ' ' ~ share_url)|urlencode }}" target="_blank"
@@ -504,12 +510,12 @@
                         title="Share on Facebook">
                         <i class="fab fa-facebook-f"></i>
                     </a>
-                    <!-- Twitter -->
+                    <!-- X (formely Twitter) -->
                     <a href="https://twitter.com/intent/tweet?text={{ share_text|urlencode }}&url={{ share_url|urlencode }}"
                         target="_blank" rel="noopener"
-                        class="w-12 h-12 bg-[#1DA1F2] text-white rounded-2xl flex items-center justify-center text-xl hover:scale-110 transition-transform shadow-lg"
-                        title="Share on Twitter">
-                        <i class="fab fa-twitter"></i>
+                        class="w-12 h-12 bg-black text-white rounded-2xl flex items-center justify-center text-xl hover:scale-110 transition-transform shadow-lg"
+                        title="Share on X">
+                        <i class="fa-brands fa-x-twitter"></i>
                     </a>
                     <!-- Reddit -->
                     <a href="https://www.reddit.com/submit?url={{ share_url|urlencode }}&title={{ share_text|urlencode }}"

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6546135271987768"
-     crossorigin="anonymous"></script>
+        crossorigin="anonymous"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CareStance | AI Career Counselling Platform</title>
     <meta name="description"
@@ -14,7 +14,7 @@
     <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="preconnect" href="https://unpkg.com" crossorigin>
-    
+
     <!-- Preload critical above-the-fold assets to improve LCP -->
     <link rel="preload" as="image" href="/static/images/image.png">
 
@@ -34,7 +34,9 @@
 
     <!-- Animation Library (AOS) -->
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet" media="print" onload="this.media='all'">
-    <noscript><link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet"></noscript>
+    <noscript>
+        <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    </noscript>
 
     <!-- Alpine.js for Interactivity -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -163,7 +165,9 @@
             </div>
 
             <!-- Mobile Toggle -->
-            <button @click="mobileMenu = !mobileMenu" class="md:hidden text-2xl text-white w-12 h-12 flex items-center justify-center rounded-lg hover:bg-white/10 focus:outline-none transition" aria-label="Toggle Menu">
+            <button @click="mobileMenu = !mobileMenu"
+                class="md:hidden text-2xl text-white w-12 h-12 flex items-center justify-center rounded-lg hover:bg-white/10 focus:outline-none transition"
+                aria-label="Toggle Menu">
                 <i class="fa-solid fa-bars" x-show="!mobileMenu"></i>
                 <i class="fa-solid fa-xmark" x-show="mobileMenu" style="display: none;"></i>
             </button>
@@ -172,10 +176,14 @@
         <!-- Mobile Menu Dropdown -->
         <div x-show="mobileMenu" x-transition
             class="md:hidden absolute top-full left-0 w-full max-h-[calc(100vh-80px)] overflow-y-auto bg-[#0F172A] border-b border-white/10 p-6 flex flex-col gap-4 shadow-2xl origin-top">
-            <a href="#students" @click="mobileMenu = false" class="text-lg font-medium py-2 hover:text-blue-400 transition">For Students</a>
-            <a href="#counsellors" @click="mobileMenu = false" class="text-lg font-medium py-2 hover:text-blue-400 transition">For Counsellors</a>
+            <a href="#students" @click="mobileMenu = false"
+                class="text-lg font-medium py-2 hover:text-blue-400 transition">For Students</a>
+            <a href="#counsellors" @click="mobileMenu = false"
+                class="text-lg font-medium py-2 hover:text-blue-400 transition">For Counsellors</a>
             <a href="/login" class="text-lg font-medium text-blue-400 py-2 hover:text-blue-300 transition">Log In</a>
-            <a href="/signup" class="bg-blue-600 hover:bg-blue-500 transition text-center py-4 mt-2 rounded-xl font-bold text-white shadow-lg">Get Started Free</a>
+            <a href="/signup"
+                class="bg-blue-600 hover:bg-blue-500 transition text-center py-4 mt-2 rounded-xl font-bold text-white shadow-lg">Get
+                Started Free</a>
         </div>
     </nav>
 
@@ -204,7 +212,8 @@
                     AI-Powered Career Discovery
                 </div>
 
-                <h1 class="font-display text-4xl sm:text-5xl md:text-7xl font-bold leading-[1.1] mb-6 tracking-tight text-white">
+                <h1
+                    class="font-display text-4xl sm:text-5xl md:text-7xl font-bold leading-[1.1] mb-6 tracking-tight text-white">
                     Find the Future <br>
                     <span class="text-gradient">You Actually Want.</span>
                 </h1>
@@ -470,7 +479,8 @@
 
         <div class="max-w-7xl mx-auto">
             <div class="text-center mb-10 md:mb-16">
-                <h2 class="text-3xl sm:text-4xl font-bold font-display">From Confusion to <span class="text-blue-500">Clarity</span>
+                <h2 class="text-3xl sm:text-4xl font-bold font-display">From Confusion to <span
+                        class="text-blue-500">Clarity</span>
                 </h2>
             </div>
 
@@ -591,7 +601,8 @@
                 <!-- Background Glow -->
                 <div class="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl"></div>
 
-                <h2 class="text-3xl sm:text-4xl md:text-5xl font-display font-bold text-white mb-6">Ready to Find Your Place?</h2>
+                <h2 class="text-3xl sm:text-4xl md:text-5xl font-display font-bold text-white mb-6">Ready to Find Your
+                    Place?</h2>
                 <p class="text-base sm:text-lg text-slate-300 mb-10 max-w-2xl mx-auto">
                     Join 50,000+ others who have discovered their true potential. No credit card required to start.
                 </p>
@@ -624,8 +635,10 @@
                 </p>
                 <div class="flex gap-4">
                     <a href="#"
-                        class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:bg-blue-600 hover:text-white transition"><i
-                            class="fa-brands fa-twitter"></i></a>
+                        class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:bg-black hover:text-white transition"
+                        title="Follow us on X">
+                        <i class="fa-brands fa-x-twitter"></i>
+                    </a>
                     <a href="#"
                         class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:bg-blue-600 hover:text-white transition"><i
                             class="fa-brands fa-linkedin"></i></a>
