@@ -1504,7 +1504,7 @@ async def appointment_status(appointment_id: int, db: Session = Depends(get_db))
         "joined_at": appointment.joined_at.isoformat() if appointment.joined_at else None
     }
 
-@app.post("/appointment/delete/{appointment_id}")
+@app.api_route("/appointment/delete/{appointment_id}", methods=["GET", "POST"])
 async def delete_appointment(appointment_id: int, request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
     if not user:
