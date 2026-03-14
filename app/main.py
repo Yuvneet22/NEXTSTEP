@@ -765,7 +765,7 @@ async def assessment_submit(
     else:
         # Generate Analysis using Fallback Strategy
         try:
-            clean_text = generate_content_with_fallback(prompt)
+            clean_text = await generate_content_with_fallback(prompt)
             result_data = json.loads(clean_text)
         except Exception as e:
             print(f"Analysis Error: {e}")
