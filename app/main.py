@@ -3358,11 +3358,11 @@ async def send_connection_request(user_id: int, request: Request, db: Session = 
         app_url = os.getenv("APP_URL", str(request.base_url).rstrip("/"))
         profile_link = f"{app_url}/student/{user.id}"
         email_body = email_utils.get_connection_request_template(
-            receiver.name, 
-            user.name, 
+            receiver.full_name, 
+            user.full_name, 
             profile_link
         )
-        email_utils.send_email(receiver.email, f"New Connection Request from {user.name}", email_body)
+        email_utils.send_email(receiver.email, f"New Connection Request from {user.full_name}", email_body)
     except Exception as e:
         print(f"FAILED TO SEND CONNECTION EMAIL: {e}")
 
@@ -3413,6 +3413,29 @@ async def reject_connection(conn_id: int, request: Request, db: Session = Depend
     db.commit()
 
     referer = request.headers.get("referer", "/my-connections")
+    return RedirectResponse(url=referer, status_code=status.HTTP_302_FOUND)
+
+
+@app.post("/connection/{conn_id}/withdraw")
+async def withdraw_connection(conn_id: int, request: Request, db: Session = Depends(get_db)):
+    """Withdraw a pending connection request sent by the current user."""
+    user = get_current_user(request, db)
+    if not user:
+        return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+
+    conn = db.query(models.StudentConnection).filter(
+        models.StudentConnection.id == conn_id,
+        models.StudentConnection.requester_id == user.id,
+        models.StudentConnection.status == "pending"
+    ).first()
+
+    if not conn:
+        raise HTTPException(status_code=404, detail="Connection request not found or cannot be withdrawn")
+
+    db.delete(conn)
+    db.commit()
+
+    referer = request.headers.get("referer", "/community")
     return RedirectResponse(url=referer, status_code=status.HTTP_302_FOUND)
 
 
